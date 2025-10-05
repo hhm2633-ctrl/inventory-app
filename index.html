@@ -3,38 +3,43 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>재고따기 — 고객용(앱 설치 가능, 오프라인 지원)</title>
+<title>솔리드옴므 아울렛재고조회</title>
 
-<!-- PWA: 색상/테마 -->
 <meta name="theme-color" content="#0b0f14" />
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="icon" sizes="192x192" href="icons/icon-192.png" />
 <link rel="apple-touch-icon" href="icons/icon-192.png" />
 
-<!-- 기본 폰트/스타일 -->
 <style>
   :root { --bg:#0b0f14; --card:#121820; --muted:#7a8593; --fg:#e8eef6; --accent:#5bbcff; }
-  html,body { margin:0; padding:0; background:var(--bg); color:var(--fg); font:14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", sans-serif; }
-  header { padding:16px 20px; border-bottom:1px solid #1c2430; display:flex; gap:12px; align-items:center; flex-wrap:wrap;}
+  html,body { margin:0; padding:0; background:var(--bg); color:var(--fg); font:14px/1.6 system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", sans-serif; }
+  header { padding:16px 20px; border-bottom:1px solid #1c2430; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
   header h1 { margin:0; font-size:18px; }
   .pill { background:#0f1620; border:1px solid #233042; padding:6px 10px; border-radius:100px; color:var(--muted); }
-  .container { padding:16px; display:grid; gap:16px; grid-template-columns: 1fr; max-width:1000px; margin:0 auto;}
+  .container { padding:16px; display:grid; gap:16px; max-width:980px; margin:0 auto; }
   .card { background:var(--card); border:1px solid #1c2430; border-radius:14px; padding:14px; }
   .card h2 { margin:0 0 10px 0; font-size:16px; }
   .hint { color:var(--muted); font-size:12px; }
+  .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
   .search { width:100%; padding:12px 14px; border-radius:10px; border:1px solid #273547; background:#0f1620; color:var(--fg); }
-  .small { font-size:12px; color:#98a7bd; }
-  .right { text-align:right; }
-  table { width:100%; border-collapse:collapse; }
-  th, td { border-bottom:1px solid #202a37; padding:8px; font-size:13px; text-align:left; vertical-align:top;}
-  th { color:#a6b3c4; position:sticky; top:0; background:#111722; }
-  .badge { display:inline-block; padding:3px 7px; border-radius:8px; font-size:11px; border:1px solid #2a3950; color:#cfe8ff;}
+  .btn { background:linear-gradient(180deg,#1c2735,#151e2a); border:1px solid #273547; color:#d9e7ff; padding:8px 12px; border-radius:10px; cursor:pointer; text-decoration:none; }
+  .btn:disabled { opacity:.5; cursor:not-allowed; }
+  .badge { display:inline-block; padding:4px 8px; border-radius:9px; font-size:12px; border:1px solid #2a3950; color:#cfe8ff; }
   .ok { background:#12321f; border-color:#1f5c37; color:#c6ffdf; }
   .warn { background:#33240f; border-color:#6b4b17; color:#ffe1b8; }
   .incoming { background:#1e2240; border-color:#3d4aac; color:#d2d8ff; }
-  .btn { background:linear-gradient(180deg,#1c2735,#151e2a); border:1px solid #273547; color:#d9e7ff; padding:8px 12px; border-radius:10px; cursor:pointer; text-decoration:none; }
-  .btn:disabled { opacity:.5; cursor:not-allowed; }
-  .toolrow { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .product { display:grid; gap:12px; border:1px solid #1c2430; border-radius:12px; padding:12px; }
+  .product-head { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .title { font-size:15px; font-weight:600; }
+  .code { color:#a6b3c4; font-family:ui-monospace,Menlo,Consolas,monospace; }
+  .controls { display:flex; gap:8px; align-items:center; }
+  .select { padding:8px 10px; border-radius:10px; border:1px solid #273547; background:#0f1620; color:var(--fg); }
+  .sizes { display:grid; gap:6px; }
+  .size-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 10px; border:1px solid #223044; border-radius:10px; background:#0f1620; }
+  .size-left { display:flex; gap:10px; align-items:center; }
+  .size-chip { min-width:40px; text-align:center; border:1px solid #314257; border-radius:8px; padding:4px 8px; color:#dfe9ff; }
+  .price { color:#cfe1ff; font-size:12px; }
+  .ads { background:#0f1620; border:1px dashed #243349; border-radius:12px; padding:14px; color:#9eb0c8; text-align:center; }
 </style>
 </head>
 <body>
@@ -46,38 +51,27 @@
   <div class="container">
     <div class="card">
       <h2>검색</h2>
-      <div class="toolrow">
+      <div class="row">
         <input id="q" class="search" placeholder="예: s243ts26, 로고 티셔츠…" />
         <button id="installBtn" class="btn" style="display:none;">앱 설치</button>
       </div>
-      <div style="height:8px"></div>
-      <div class="small">검색은 <b>상품코드/품명</b>에 부분일치로 동작합니다. (오프라인에서도 최근 데이터로 검색 가능)</div>
+      <div style="height:6px"></div>
+      <div class="hint">동일 품번을 하나로 묶어서 보여주고, <b>컬러는 선택</b>, <b>사이즈는 세로 목록</b>으로 상태만 표시합니다.</div>
     </div>
 
     <div class="card">
       <h2>재고 결과</h2>
-      <div style="max-height:65vh; overflow:auto; border:1px solid #1c2430; border-radius:10px;">
-        <table id="tbl">
-          <thead>
-            <tr>
-              <th>상품코드</th>
-              <th>품명</th>
-              <th>색상</th>
-              <th>사이즈</th>
-              <th class="right">매장</th>
-              <th class="right">물류</th>
-              <th class="right">전체</th>
-              <th>상태</th>
-              <th class="right">정가</th>
-              <th class="right">판매가</th>
-              <th class="right">주문</th>
-            </tr>
-          </thead>
-          <tbody id="tbody"></tbody>
-        </table>
-      </div>
+      <div id="results" class="grid" style="display:grid; gap:12px;"></div>
+      <div id="nores" class="hint" style="display:none;">검색 결과가 없습니다.</div>
       <div style="height:10px"></div>
-      <div class="small hint">※ 주문 버튼은 Google Forms로 이동하며, 상품정보가 자동으로 채워집니다.</div>
+      <div class="hint">※ “주문” 버튼은 Google Forms로 이동하며, 상품정보가 자동으로 채워집니다.</div>
+    </div>
+
+    <!-- 선택 사항: 여백에 광고영역(나중에 AdSense 승인/스크립트 붙이면 노출됨) -->
+    <div class="card">
+      <div class="ads" id="ad-placeholder">
+        [광고 영역] 커스텀 도메인 연결 + AdSense 승인 후 스크립트를 여기에 붙이면 노출됩니다.
+      </div>
     </div>
   </div>
 
@@ -89,16 +83,14 @@ const FORM_ENTRY = {
   품명:    "entry.2222222222",
   색상:    "entry.3333333333",
   사이즈:  "entry.4444444444",
-  수량:    "entry.5555555555"    // 폼에 ‘수량’ 필드도 하나 만들어 두세요(기본 1)
+  수량:    "entry.5555555555"
 };
 
-/* ===== 데이터 URL (같은 폴더의 inventory.json) ===== */
+/* ===== 데이터 URL ===== */
 const JSON_URL = "./inventory.json";
 
 /* ===== 유틸 ===== */
 const nz = (v)=> (v==null?"":String(v).trim());
-const fmt = (n)=> (n==null||isNaN(n)?"":Number(n).toLocaleString());
-const fmtWon = (n)=> (n==null||isNaN(n)?"":Number(n).toLocaleString()+"원");
 function badgeClass(st){
   if (st==="주문가능") return "badge ok";
   if (nz(st).startsWith("입고 예정")) return "badge incoming";
@@ -116,95 +108,169 @@ function buildOrderLink(row){
   return p.toString();
 }
 
-/* ===== 데이터 로딩/렌더 ===== */
+/* ===== 전역 ===== */
 let ALL_ROWS = [];
-let VIEW_ROWS = [];
+let GROUPS = []; // [{code,name,colors:[{color, items:[rows]}]}]
+let VIEW_LIST = []; // 검색 결과: code 단위
 
+/* ===== 데이터 로딩 ===== */
 async function loadData(){
-  // 최신 데이터 우선(network-first), 실패 시 서비스워커 캐시(오프라인)로 대체
-  try {
+  try{
     const res = await fetch(JSON_URL, {cache:"no-store"});
-    if (!res.ok) throw new Error(res.statusText);
     const data = await res.json();
     ALL_ROWS = Array.isArray(data.rows)? data.rows: [];
-    VIEW_ROWS = ALL_ROWS.slice(0,1000);
-    render();
-  } catch (e) {
-    // 오프라인 등으로 실패 시 그냥 캐시된 index.html이 보여지고,
-    // service-worker가 inventory.json도 캐시해둔 것을 써 줍니다(아래 SW 전략 참고).
-    console.warn("네트워크 실패 → 캐시된 데이터 사용을 시도합니다:", e);
-    try {
-      const res = await fetch(JSON_URL); // 캐시 히트 기대
+  }catch(e){
+    try{
+      const res = await fetch(JSON_URL);
       const data = await res.json();
       ALL_ROWS = Array.isArray(data.rows)? data.rows: [];
-      VIEW_ROWS = ALL_ROWS.slice(0,1000);
-      render();
-    } catch (e2) {
-      alert("데이터를 불러오지 못했습니다. (오프라인 캐시 없음)");
+    }catch(e2){
+      ALL_ROWS = [];
     }
   }
+  buildGroups();
+  applySearch("");
 }
 
-function render(){
-  const tb = document.querySelector("#tbody");
-  tb.innerHTML = "";
-  for (const r of VIEW_ROWS){
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${nz(r["상품코드"])}</td>
-      <td>${nz(r["품명"])}</td>
-      <td>${nz(r["색상"])}</td>
-      <td>${nz(r["사이즈"])}</td>
-      <td class="right">${fmt(r["매장재고"])}</td>
-      <td class="right">${fmt(r["창고재고"])}</td>
-      <td class="right">${fmt(r["전체재고"])}</td>
-      <td><span class="${badgeClass(nz(r["상태"]))}">${nz(r["상태"])}</span></td>
-      <td class="right">${fmtWon(r["소비자가"])}</td>
-      <td class="right">${fmtWon(r["판매가"])}</td>
-      <td class="right"><a class="btn" href="${buildOrderLink(r)}" target="_blank" rel="noopener">주문</a></td>
-    `;
-    tb.appendChild(tr);
-  }
-}
-
-document.querySelector("#q").addEventListener("input", (e)=>{
-  const q = nz(e.target.value).toLowerCase();
-  if (!q){ VIEW_ROWS = ALL_ROWS.slice(0,1000); render(); return; }
-  VIEW_ROWS = ALL_ROWS.filter(r=>{
-    const code = nz(r["상품코드"]).toLowerCase();
-    const name = nz(r["품명"]).toLowerCase();
-    return code.includes(q) || name.includes(q);
-  }).slice(0,1000);
-  render();
-});
-
-/* ===== PWA: 서비스워커 등록 & 설치 버튼 ===== */
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", async () => {
-    try {
-      await navigator.serviceWorker.register("./service-worker.js");
-      // console.log("SW registered");
-    } catch (e) {
-      console.warn("SW register failed:", e);
+function buildGroups(){
+  const byCode = new Map();
+  for(const r of ALL_ROWS){
+    const code = nz(r["상품코드"]); if(!code) continue;
+    const name = nz(r["품명"]);
+    const color = nz(r["색상"]);
+    const size  = nz(r["사이즈"]);
+    if(!byCode.has(code)){
+      byCode.set(code, { code, name, colors:new Map() });
     }
+    const bucket = byCode.get(code);
+    if(!bucket.colors.has(color)) bucket.colors.set(color, []);
+    bucket.colors.get(color).push(r);
+  }
+  GROUPS = Array.from(byCode.values()).map(g=>{
+    // 색상/사이즈 정렬
+    const colors = Array.from(g.colors.entries()).map(([color, items])=>{
+      items = items.slice().sort((a,b)=>{
+        // 사이즈 숫자/문자 혼용 정렬
+        const av = nz(a["사이즈"]), bv = nz(b["사이즈"]);
+        const ai = parseInt(av,10), bi = parseInt(bv,10);
+        if(!isNaN(ai) && !isNaN(bi) && ai!==bi) return ai-bi;
+        return av.localeCompare(bv);
+      });
+      return { color, items };
+    }).sort((a,b)=> a.color.localeCompare(b.color));
+    return { code:g.code, name:g.name, colors };
   });
 }
 
-let deferredPrompt = null;
-window.addEventListener("beforeinstallprompt", (e)=>{
-  e.preventDefault();
-  deferredPrompt = e;
-  const btn = document.getElementById("installBtn");
-  if (btn) btn.style.display = "inline-block";
-});
+/* ===== 렌더 ===== */
+function render(){
+  const root = document.getElementById("results");
+  const empty = document.getElementById("nores");
+  root.innerHTML = "";
+  if(!VIEW_LIST.length){ empty.style.display="block"; return; }
+  empty.style.display="none";
+
+  for(const prod of VIEW_LIST){
+    const wrap = document.createElement("div");
+    wrap.className = "product";
+
+    const head = document.createElement("div");
+    head.className = "product-head";
+
+    const left = document.createElement("div");
+    left.innerHTML = `<div class="title">${nz(prod.name)||nz(prod.code)}</div>
+                      <div class="code">${nz(prod.code)}</div>`;
+
+    const right = document.createElement("div");
+    right.className = "controls";
+    const sel = document.createElement("select");
+    sel.className = "select";
+    for(const c of prod.colors){
+      const opt = document.createElement("option");
+      opt.value = c.color; opt.textContent = c.color || "(색상없음)";
+      sel.appendChild(opt);
+    }
+    right.appendChild(sel);
+
+    head.appendChild(left);
+    head.appendChild(right);
+    wrap.appendChild(head);
+
+    const sizes = document.createElement("div");
+    sizes.className = "sizes";
+    wrap.appendChild(sizes);
+
+    function drawSizes(colorValue){
+      sizes.innerHTML = "";
+      const colorBucket = prod.colors.find(c=> c.color===colorValue) || prod.colors[0];
+      for(const r of (colorBucket?.items||[])){
+        const line = document.createElement("div");
+        line.className = "size-row";
+
+        const left = document.createElement("div");
+        left.className = "size-left";
+        const sizeChip = document.createElement("div");
+        sizeChip.className = "size-chip";
+        sizeChip.textContent = nz(r["사이즈"])||"-";
+        const badge = document.createElement("span");
+        badge.className = badgeClass(nz(r["상태"]));
+        badge.textContent = nz(r["상태"]);
+        left.appendChild(sizeChip);
+        left.appendChild(badge);
+
+        const order = document.createElement("a");
+        order.className = "btn";
+        order.target = "_blank"; order.rel = "noopener";
+        order.textContent = "주문";
+        order.href = buildOrderLink({
+          "상품코드": r["상품코드"],
+          "품명": r["품명"],
+          "색상": colorBucket?.color || r["색상"],
+          "사이즈": r["사이즈"]
+        });
+
+        line.appendChild(left);
+        line.appendChild(order);
+        sizes.appendChild(line);
+      }
+    }
+
+    sel.addEventListener("change", (e)=> drawSizes(e.target.value));
+    drawSizes(sel.value || (prod.colors[0]?.color ?? ""));
+    root.appendChild(wrap);
+  }
+}
+
+function applySearch(q){
+  const qq = nz(q).toLowerCase();
+  if(!qq){
+    VIEW_LIST = GROUPS.slice(0,200); // 너무 많을 때 대비
+  }else{
+    VIEW_LIST = GROUPS.filter(g=>{
+      const code = nz(g.code).toLowerCase();
+      const name = nz(g.name).toLowerCase();
+      return code.includes(qq) || name.includes(qq);
+    }).slice(0,200);
+  }
+  render();
+}
+
+/* ===== 이벤트 ===== */
+document.getElementById("q").addEventListener("input", (e)=> applySearch(e.target.value));
+
+/* ===== PWA 설치 버튼 ===== */
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", async () => {
+    try { await navigator.serviceWorker.register("./service-worker.js"); } catch(e){}
+  });
+}
+let deferredPrompt=null;
+window.addEventListener("beforeinstallprompt", (e)=>{ e.preventDefault(); deferredPrompt=e; const b=document.getElementById("installBtn"); if(b) b.style.display="inline-block"; });
 document.getElementById("installBtn")?.addEventListener("click", async ()=>{
-  if (!deferredPrompt) return;
-  deferredPrompt.prompt();
-  await deferredPrompt.userChoice;  // 사용자의 선택 대기
-  deferredPrompt = null;
-  document.getElementById("installBtn").style.display = "none";
+  if(!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt=null; document.getElementById("installBtn").style.display="none";
 });
 
+/* 시작 */
 loadData();
 </script>
 </body>
