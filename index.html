@@ -11,35 +11,51 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png" />
 
 <style>
-  :root { --bg:#0b0f14; --card:#121820; --muted:#7a8593; --fg:#e8eef6; --accent:#5bbcff; }
-  html,body { margin:0; padding:0; background:var(--bg); color:var(--fg); font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans KR",sans-serif; }
-  header { padding:16px 20px; border-bottom:1px solid #1c2430; display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:space-between; }
-  header h1 { margin:0; font-size:20px; letter-spacing:.2px; }
+  :root { --card:#121820cc; --muted:#7a8593; --fg:#e8eef6; --accent:#5bbcff; }
+  html,body {
+    margin:0; padding:0;
+    color:var(--fg);
+    font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans KR",sans-serif;
+    min-height:100vh;
+    background:url("031.jpg") center/cover no-repeat fixed;
+  }
+  body::before {
+    content:"";
+    position:fixed; inset:0;
+    background:rgba(0,0,0,0.6);
+    z-index:-1;
+  }
+  header {
+    padding:16px 20px;
+    display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:space-between;
+    border-bottom:1px solid rgba(255,255,255,0.1);
+    backdrop-filter:blur(6px);
+  }
+  header h1 { margin:0; font-size:20px; letter-spacing:.2px; font-weight:600; }
   .pills { display:flex; gap:8px; flex-wrap:wrap; }
-  .pill { background:#0f1620; border:1px solid #233042; padding:8px 12px; border-radius:100px; color:#cfe1ff; text-decoration:none; }
-  .pill:hover { border-color:#355079; }
+  .pill { background:#0f1620b0; border:1px solid #233042; padding:8px 12px; border-radius:100px; color:#cfe1ff; text-decoration:none; }
+  .pill:hover { background:#1c2738; }
   .container { padding:16px; display:grid; gap:16px; max-width:980px; margin:0 auto; }
-  .card { background:var(--card); border:1px solid #1c2430; border-radius:14px; padding:14px; }
+  .card { background:var(--card); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:14px; backdrop-filter:blur(8px); }
   .card h2 { margin:0 0 10px 0; font-size:16px; }
   .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-  .search { width:100%; padding:12px 14px; border-radius:10px; border:1px solid #273547; background:#0f1620; color:var(--fg); }
+  .search { width:100%; padding:12px 14px; border-radius:10px; border:1px solid #273547; background:#0f1620b0; color:var(--fg); }
   .btn { background:linear-gradient(180deg,#1c2735,#151e2a); border:1px solid #273547; color:#d9e7ff; padding:8px 12px; border-radius:10px; cursor:pointer; text-decoration:none; }
-  .btn:disabled { opacity:.5; cursor:not-allowed; }
   .badge { display:inline-block; padding:4px 8px; border-radius:9px; font-size:12px; border:1px solid #2a3950; color:#cfe8ff; }
   .ok { background:#12321f; border-color:#1f5c37; color:#c6ffdf; }
   .warn { background:#33240f; border-color:#6b4b17; color:#ffe1b8; }
   .incoming { background:#1e2240; border-color:#3d4aac; color:#d2d8ff; }
-  .product { display:grid; gap:12px; border:1px solid #1c2430; border-radius:12px; padding:12px; }
+  .product { display:grid; gap:12px; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:12px; background:#0b111acc; }
   .product-head { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }
   .title { font-size:16px; font-weight:700; font-family:ui-monospace,Menlo,Consolas,monospace; }
   .controls { display:flex; gap:8px; align-items:center; }
   .select { padding:8px 10px; border-radius:10px; border:1px solid #273547; background:#0f1620; color:var(--fg); }
   .sizes { display:grid; gap:6px; }
-  .size-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 10px; border:1px solid #223044; border-radius:10px; background:#0f1620; }
+  .size-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 10px; border:1px solid #223044; border-radius:10px; background:#0f1620b0; }
   .size-left { display:flex; gap:10px; align-items:center; }
   .size-chip { min-width:40px; text-align:center; border:1px solid #314257; border-radius:8px; padding:4px 8px; color:#dfe9ff; }
-  .ads { background:#0f1620; border:1px dashed #243349; border-radius:12px; padding:14px; color:#9eb0c8; text-align:center; }
-  footer { margin:24px auto; max-width:980px; padding:12px 16px; color:#9fb1c8; border-top:1px solid #1c2430; display:flex; gap:12px; flex-wrap:wrap; justify-content:space-between; font-size:13px; }
+  .ads { background:#0f1620b0; border:1px dashed #243349; border-radius:12px; padding:14px; color:#9eb0c8; text-align:center; }
+  footer { margin:24px auto; max-width:980px; padding:12px 16px; color:#9fb1c8; border-top:1px solid rgba(255,255,255,0.1); display:flex; gap:12px; flex-wrap:wrap; justify-content:space-between; font-size:13px; }
   footer a { color:#9fbef6; text-decoration:none; }
   footer a:hover { text-decoration:underline; }
 </style>
@@ -58,9 +74,7 @@
       <h2>검색</h2>
       <div class="row">
         <input id="q" class="search" placeholder="예: s243ts26, 로고 티셔츠…" />
-        <button id="installBtn" class="btn" style="display:none;">앱 설치</button>
       </div>
-      <!-- 🔸 요청대로: 검색칸 아래 설명/주석 제거 -->
     </div>
 
     <div class="card">
@@ -89,198 +103,16 @@
   </footer>
 
 <script>
-/* ===== 설정: 구글폼 ===== */
-const GOOGLE_FORM_BASE = "https://docs.google.com/forms/d/e/FORM_ID/viewform";
-const FORM_ENTRY = {
-  상품코드: "entry.1111111111",
-  품명:    "entry.2222222222",
-  색상:    "entry.3333333333",
-  사이즈:  "entry.4444444444",
-  수량:    "entry.5555555555"
-};
-
-/* ===== 데이터 URL ===== */
 const JSON_URL = "./inventory.json";
-
-/* ===== 유틸 ===== */
 const nz = (v)=> (v==null?"":String(v).trim());
-function badgeClass(st){
-  if (st==="주문가능") return "badge ok";
-  if (nz(st).startsWith("입고 예정")) return "badge incoming";
-  if (st==="품절임박") return "badge warn";
-  return "badge";
-}
-function buildOrderLink(row){
-  const p = new URL(GOOGLE_FORM_BASE);
-  p.searchParams.set("usp","pp_url");
-  p.searchParams.set(FORM_ENTRY.상품코드, nz(row["상품코드"]));
-  p.searchParams.set(FORM_ENTRY.품명, nz(row["품명"]));
-  p.searchParams.set(FORM_ENTRY.색상, nz(row["색상"]));
-  p.searchParams.set(FORM_ENTRY.사이즈, nz(row["사이즈"]));
-  p.searchParams.set(FORM_ENTRY.수량, "1");
-  return p.toString();
-}
-
-/* ===== 전역 ===== */
-let ALL_ROWS = [];
-let GROUPS = [];   // [{code,name,colors:[{color,items[]}]}]
-let VIEW_LIST = [];
-
-/* ===== 데이터 로딩 ===== */
-async function loadData(){
-  try{
-    const res = await fetch(JSON_URL, {cache:"no-store"});
-    const data = await res.json();
-    ALL_ROWS = Array.isArray(data.rows)? data.rows: [];
-  }catch(e){
-    try{
-      const res = await fetch(JSON_URL);
-      const data = await res.json();
-      ALL_ROWS = Array.isArray(data.rows)? data.rows: [];
-    }catch(e2){
-      ALL_ROWS = [];
-    }
-  }
-  buildGroups();
-  applySearch("");
-}
-
-function buildGroups(){
-  const byCode = new Map();
-  for(const r of ALL_ROWS){
-    const code = nz(r["상품코드"]); if(!code) continue;
-    const name = nz(r["품명"]);
-    const color = nz(r["색상"]);
-    if(!byCode.has(code)){
-      byCode.set(code, { code, name, colors:new Map() });
-    }
-    const bucket = byCode.get(code);
-    if(!bucket.colors.has(color)) bucket.colors.set(color, []);
-    bucket.colors.get(color).push(r);
-  }
-  GROUPS = Array.from(byCode.values()).map(g=>{
-    const colors = Array.from(g.colors.entries()).map(([color, items])=>{
-      items = items.slice().sort((a,b)=>{
-        const av = nz(a["사이즈"]), bv = nz(b["사이즈"]);
-        const ai = parseInt(av,10), bi = parseInt(bv,10);
-        if(!isNaN(ai) && !isNaN(bi) && ai!==bi) return ai-bi;
-        return av.localeCompare(bv);
-      });
-      return { color, items };
-    }).sort((a,b)=> a.color.localeCompare(b.color));
-    return { code:g.code, name:g.name, colors };
-  });
-}
-
-/* ===== 렌더 ===== */
-function render(){
-  const root = document.getElementById("results");
-  const empty = document.getElementById("nores");
-  root.innerHTML = "";
-  if(!VIEW_LIST.length){ empty.style.display="block"; return; }
-  empty.style.display="none";
-
-  for(const prod of VIEW_LIST){
-    const wrap = document.createElement("div");
-    wrap.className = "product";
-
-    const head = document.createElement("div");
-    head.className = "product-head";
-
-    const left = document.createElement("div");
-    /* 🔸 요청대로: 품명 표시 제거, 품번만 크게 */
-    left.innerHTML = `<div class="title">${nz(prod.code)}</div>`;
-
-    const right = document.createElement("div");
-    right.className = "controls";
-    const sel = document.createElement("select");
-    sel.className = "select";
-    for(const c of prod.colors){
-      const opt = document.createElement("option");
-      opt.value = c.color; opt.textContent = c.color || "(색상없음)";
-      sel.appendChild(opt);
-    }
-    right.appendChild(sel);
-
-    head.appendChild(left);
-    head.appendChild(right);
-    wrap.appendChild(head);
-
-    const sizes = document.createElement("div");
-    sizes.className = "sizes";
-    wrap.appendChild(sizes);
-
-    function drawSizes(colorValue){
-      sizes.innerHTML = "";
-      const colorBucket = prod.colors.find(c=> c.color===colorValue) || prod.colors[0];
-      for(const r of (colorBucket?.items||[])){
-        const line = document.createElement("div");
-        line.className = "size-row";
-
-        const l = document.createElement("div");
-        l.className = "size-left";
-        const sizeChip = document.createElement("div");
-        sizeChip.className = "size-chip";
-        sizeChip.textContent = nz(r["사이즈"])||"-";
-        const badge = document.createElement("span");
-        badge.className = badgeClass(nz(r["상태"]));
-        badge.textContent = nz(r["상태"]);
-        l.appendChild(sizeChip);
-        l.appendChild(badge);
-
-        const order = document.createElement("a");
-        order.className = "btn";
-        order.target = "_blank"; order.rel = "noopener";
-        order.textContent = "주문";
-        order.href = buildOrderLink({
-          "상품코드": r["상품코드"],
-          "품명": r["품명"],
-          "색상": colorBucket?.color || r["색상"],
-          "사이즈": r["사이즈"]
-        });
-
-        line.appendChild(l);
-        line.appendChild(order);
-        sizes.appendChild(line);
-      }
-    }
-
-    sel.addEventListener("change", (e)=> drawSizes(e.target.value));
-    drawSizes(sel.value || (prod.colors[0]?.color ?? ""));
-    root.appendChild(wrap);
-  }
-}
-
-function applySearch(q){
-  const qq = nz(q).toLowerCase();
-  if(!qq){
-    VIEW_LIST = GROUPS.slice(0,200);
-  }else{
-    VIEW_LIST = GROUPS.filter(g=>{
-      const code = nz(g.code).toLowerCase();
-      const name = nz(g.name).toLowerCase();
-      return code.includes(qq) || name.includes(qq); // 검색은 그대로(품명도 허용)
-    }).slice(0,200);
-  }
-  render();
-}
-
-/* 이벤트 */
-document.getElementById("q").addEventListener("input", (e)=> applySearch(e.target.value));
-
-/* PWA */
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", async () => {
-    try { await navigator.serviceWorker.register("./service-worker.js"); } catch(e){}
-  });
-}
-let deferredPrompt=null;
-window.addEventListener("beforeinstallprompt", (e)=>{ e.preventDefault(); deferredPrompt=e; const b=document.getElementById("installBtn"); if(b) b.style.display="inline-block"; });
-document.getElementById("installBtn")?.addEventListener("click", async ()=>{
-  if(!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt=null; document.getElementById("installBtn").style.display="none";
-});
-
-/* 시작 */
+function badgeClass(st){ if(st==="주문가능")return"badge ok"; if(nz(st).startsWith("입고 예정"))return"badge incoming"; if(st==="품절임박")return"badge warn"; return"badge";}
+function buildOrderLink(r){const u=new URL("https://docs.google.com/forms/d/e/FORM_ID/viewform");u.searchParams.set("usp","pp_url");u.searchParams.set("entry.1111111111",r["상품코드"]);u.searchParams.set("entry.2222222222",r["품명"]);u.searchParams.set("entry.3333333333",r["색상"]);u.searchParams.set("entry.4444444444",r["사이즈"]);u.searchParams.set("entry.5555555555","1");return u.toString();}
+let ALL_ROWS=[];let GROUPS=[];let VIEW_LIST=[];
+async function loadData(){try{const r=await fetch(JSON_URL,{cache:"no-store"});const d=await r.json();ALL_ROWS=Array.isArray(d.rows)?d.rows:[]}catch{ALL_ROWS=[]}buildGroups();applySearch("")}
+function buildGroups(){const byCode=new Map();for(const r of ALL_ROWS){const code=nz(r["상품코드"]);if(!code)continue;const name=nz(r["품명"]);const color=nz(r["색상"]);if(!byCode.has(code))byCode.set(code,{code,name,colors:new Map()});const g=byCode.get(code);if(!g.colors.has(color))g.colors.set(color,[]);g.colors.get(color).push(r)}GROUPS=Array.from(byCode.values()).map(g=>{const colors=Array.from(g.colors.entries()).map(([c,i])=>({color:c,items:i}));return{code:g.code,name:g.name,colors}});}
+function render(){const root=document.getElementById("results");const empty=document.getElementById("nores");root.innerHTML="";if(!VIEW_LIST.length){empty.style.display="block";return;}empty.style.display="none";for(const prod of VIEW_LIST){const wrap=document.createElement("div");wrap.className="product";const head=document.createElement("div");head.className="product-head";const left=document.createElement("div");left.innerHTML=`<div class="title">${nz(prod.code)}</div>`;const right=document.createElement("div");right.className="controls";const sel=document.createElement("select");sel.className="select";for(const c of prod.colors){const o=document.createElement("option");o.value=c.color;o.textContent=c.color||"(색상없음)";sel.appendChild(o);}right.appendChild(sel);head.appendChild(left);head.appendChild(right);wrap.appendChild(head);const sizes=document.createElement("div");sizes.className="sizes";wrap.appendChild(sizes);function draw(color){sizes.innerHTML="";const col=prod.colors.find(c=>c.color===color)||prod.colors[0];for(const r of(col?.items||[])){const line=document.createElement("div");line.className="size-row";const l=document.createElement("div");l.className="size-left";const chip=document.createElement("div");chip.className="size-chip";chip.textContent=nz(r["사이즈"])||"-";const b=document.createElement("span");b.className=badgeClass(nz(r["상태"]));b.textContent=nz(r["상태"]);l.appendChild(chip);l.appendChild(b);const order=document.createElement("a");order.className="btn";order.target="_blank";order.rel="noopener";order.textContent="주문";order.href=buildOrderLink(r);line.appendChild(l);line.appendChild(order);sizes.appendChild(line)}}sel.addEventListener("change",e=>draw(e.target.value));draw(sel.value||prod.colors[0]?.color||"");root.appendChild(wrap);}}
+function applySearch(q){const qq=nz(q).toLowerCase();VIEW_LIST=GROUPS.filter(g=>nz(g.code).toLowerCase().includes(qq)||nz(g.name).toLowerCase().includes(qq));render();}
+document.getElementById("q").addEventListener("input",e=>applySearch(e.target.value));
 loadData();
 </script>
 </body>
