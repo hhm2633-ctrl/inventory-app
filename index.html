@@ -21,7 +21,6 @@
   .container { padding:16px; display:grid; gap:16px; max-width:980px; margin:0 auto; }
   .card { background:var(--card); border:1px solid #1c2430; border-radius:14px; padding:14px; }
   .card h2 { margin:0 0 10px 0; font-size:16px; }
-  .hint { color:var(--muted); font-size:12px; }
   .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
   .search { width:100%; padding:12px 14px; border-radius:10px; border:1px solid #273547; background:#0f1620; color:var(--fg); }
   .btn { background:linear-gradient(180deg,#1c2735,#151e2a); border:1px solid #273547; color:#d9e7ff; padding:8px 12px; border-radius:10px; cursor:pointer; text-decoration:none; }
@@ -32,8 +31,7 @@
   .incoming { background:#1e2240; border-color:#3d4aac; color:#d2d8ff; }
   .product { display:grid; gap:12px; border:1px solid #1c2430; border-radius:12px; padding:12px; }
   .product-head { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }
-  .title { font-size:15px; font-weight:600; }
-  .code { color:#a6b3c4; font-family:ui-monospace,Menlo,Consolas,monospace; }
+  .title { font-size:16px; font-weight:700; font-family:ui-monospace,Menlo,Consolas,monospace; }
   .controls { display:flex; gap:8px; align-items:center; }
   .select { padding:8px 10px; border-radius:10px; border:1px solid #273547; background:#0f1620; color:var(--fg); }
   .sizes { display:grid; gap:6px; }
@@ -50,9 +48,7 @@
   <header>
     <h1>솔리드옴므 아울렛 재고 조회</h1>
     <div class="pills">
-      <!-- 전화 연결 -->
       <a class="pill" href="tel:0221369886">매장 전화연결</a>
-      <!-- 카카오 채널 연결 -->
       <a class="pill" href="https://center-pf.kakao.com/_EfjEj/chats" target="_blank" rel="noopener">카카오채널 연결</a>
     </div>
   </header>
@@ -64,19 +60,17 @@
         <input id="q" class="search" placeholder="예: s243ts26, 로고 티셔츠…" />
         <button id="installBtn" class="btn" style="display:none;">앱 설치</button>
       </div>
-      <div style="height:6px"></div>
-      <div class="hint">동일 품번을 하나로 묶어서 보여주고, <b>컬러는 선택</b>, <b>사이즈는 세로 목록</b>으로 상태만 표시합니다.</div>
+      <!-- 🔸 요청대로: 검색칸 아래 설명/주석 제거 -->
     </div>
 
     <div class="card">
       <h2>재고 결과</h2>
       <div id="results" class="grid" style="display:grid; gap:12px;"></div>
-      <div id="nores" class="hint" style="display:none;">검색 결과가 없습니다.</div>
+      <div id="nores" style="display:none; color:#9fb1c8;">검색 결과가 없습니다.</div>
       <div style="height:10px"></div>
-      <div class="hint">※ “주문” 버튼은 Google Forms로 이동하며, 상품정보가 자동으로 채워집니다.</div>
+      <div style="color:#9fb1c8;">※ “주문” 버튼은 Google Forms로 이동하며, 상품정보가 자동으로 채워집니다.</div>
     </div>
 
-    <!-- 광고 영역(AdSense 승인 후 스크립트를 이 div에 삽입) -->
     <div class="card">
       <div class="ads" id="ad-placeholder">
         [광고 영역] 커스텀 도메인 연결 + AdSense 승인 후 스크립트를 여기에 붙이면 노출됩니다.
@@ -95,7 +89,7 @@
   </footer>
 
 <script>
-/* ===== 설정(여기만 바꾸세요): 구글폼 ===== */
+/* ===== 설정: 구글폼 ===== */
 const GOOGLE_FORM_BASE = "https://docs.google.com/forms/d/e/FORM_ID/viewform";
 const FORM_ENTRY = {
   상품코드: "entry.1111111111",
@@ -129,8 +123,8 @@ function buildOrderLink(row){
 
 /* ===== 전역 ===== */
 let ALL_ROWS = [];
-let GROUPS = []; // [{code,name,colors:[{color, items:[rows]}]}]
-let VIEW_LIST = []; // 검색 결과: code 단위
+let GROUPS = [];   // [{code,name,colors:[{color,items[]}]}]
+let VIEW_LIST = [];
 
 /* ===== 데이터 로딩 ===== */
 async function loadData(){
@@ -165,7 +159,6 @@ function buildGroups(){
     bucket.colors.get(color).push(r);
   }
   GROUPS = Array.from(byCode.values()).map(g=>{
-    // 색상/사이즈 정렬
     const colors = Array.from(g.colors.entries()).map(([color, items])=>{
       items = items.slice().sort((a,b)=>{
         const av = nz(a["사이즈"]), bv = nz(b["사이즈"]);
@@ -195,8 +188,8 @@ function render(){
     head.className = "product-head";
 
     const left = document.createElement("div");
-    left.innerHTML = `<div class="title">${nz(prod.name)||nz(prod.code)}</div>
-                      <div class="code">${nz(prod.code)}</div>`;
+    /* 🔸 요청대로: 품명 표시 제거, 품번만 크게 */
+    left.innerHTML = `<div class="title">${nz(prod.code)}</div>`;
 
     const right = document.createElement("div");
     right.className = "controls";
@@ -224,16 +217,16 @@ function render(){
         const line = document.createElement("div");
         line.className = "size-row";
 
-        const left = document.createElement("div");
-        left.className = "size-left";
+        const l = document.createElement("div");
+        l.className = "size-left";
         const sizeChip = document.createElement("div");
         sizeChip.className = "size-chip";
         sizeChip.textContent = nz(r["사이즈"])||"-";
         const badge = document.createElement("span");
         badge.className = badgeClass(nz(r["상태"]));
         badge.textContent = nz(r["상태"]);
-        left.appendChild(sizeChip);
-        left.appendChild(badge);
+        l.appendChild(sizeChip);
+        l.appendChild(badge);
 
         const order = document.createElement("a");
         order.className = "btn";
@@ -246,7 +239,7 @@ function render(){
           "사이즈": r["사이즈"]
         });
 
-        line.appendChild(left);
+        line.appendChild(l);
         line.appendChild(order);
         sizes.appendChild(line);
       }
@@ -266,16 +259,16 @@ function applySearch(q){
     VIEW_LIST = GROUPS.filter(g=>{
       const code = nz(g.code).toLowerCase();
       const name = nz(g.name).toLowerCase();
-      return code.includes(qq) || name.includes(qq);
+      return code.includes(qq) || name.includes(qq); // 검색은 그대로(품명도 허용)
     }).slice(0,200);
   }
   render();
 }
 
-/* ===== 이벤트 ===== */
+/* 이벤트 */
 document.getElementById("q").addEventListener("input", (e)=> applySearch(e.target.value));
 
-/* ===== PWA 설치 버튼 ===== */
+/* PWA */
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
     try { await navigator.serviceWorker.register("./service-worker.js"); } catch(e){}
