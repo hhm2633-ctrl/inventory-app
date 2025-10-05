@@ -1,119 +1,278 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>솔리드옴므 아울렛 재고 조회</title>
-
-<meta name="theme-color" content="#0b0f14" />
-<link rel="manifest" href="manifest.webmanifest" />
-<link rel="icon" sizes="192x192" href="icons/icon-192.png" />
-<link rel="apple-touch-icon" href="icons/icon-192.png" />
-
-<style>
-  :root { --card:#121820cc; --muted:#7a8593; --fg:#e8eef6; --accent:#5bbcff; }
-  html,body {
-    margin:0; padding:0;
-    color:var(--fg);
-    font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans KR",sans-serif;
-    min-height:100vh;
-    background:url("./031.jpg") center/cover no-repeat fixed;
-  }
-  body::before {
-    content:"";
-    position:fixed; inset:0;
-    background:rgba(0,0,0,0.6);
-    z-index:-1;
-  }
-  header {
-    padding:16px 20px;
-    display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:space-between;
-    border-bottom:1px solid rgba(255,255,255,0.1);
-    backdrop-filter:blur(6px);
-  }
-  header h1 { margin:0; font-size:20px; letter-spacing:.2px; font-weight:600; }
-  .pills { display:flex; gap:8px; flex-wrap:wrap; }
-  .pill { background:#0f1620b0; border:1px solid #233042; padding:8px 12px; border-radius:100px; color:#cfe1ff; text-decoration:none; }
-  .pill:hover { background:#1c2738; }
-  .container { padding:16px; display:grid; gap:16px; max-width:980px; margin:0 auto; }
-  .card { background:var(--card); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:14px; backdrop-filter:blur(8px); }
-  .card h2 { margin:0 0 10px 0; font-size:16px; }
-  .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-  .search { width:100%; padding:12px 14px; border-radius:10px; border:1px solid #273547; background:#0f1620b0; color:var(--fg); }
-  .btn { background:linear-gradient(180deg,#1c2735,#151e2a); border:1px solid #273547; color:#d9e7ff; padding:8px 12px; border-radius:10px; cursor:pointer; text-decoration:none; }
-  .badge { display:inline-block; padding:4px 8px; border-radius:9px; font-size:12px; border:1px solid #2a3950; color:#cfe8ff; }
-  .ok { background:#12321f; border-color:#1f5c37; color:#c6ffdf; }
-  .warn { background:#33240f; border-color:#6b4b17; color:#ffe1b8; }
-  .incoming { background:#1e2240; border-color:#3d4aac; color:#d2d8ff; }
-  .product { display:grid; gap:12px; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:12px; background:#0b111acc; }
-  .product-head { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }
-  .title { font-size:16px; font-weight:700; font-family:ui-monospace,Menlo,Consolas,monospace; }
-  .controls { display:flex; gap:8px; align-items:center; }
-  .select { padding:8px 10px; border-radius:10px; border:1px solid #273547; background:#0f1620; color:var(--fg); }
-  .sizes { display:grid; gap:6px; }
-  .size-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 10px; border:1px solid #223044; border-radius:10px; background:#0f1620b0; }
-  .size-left { display:flex; gap:10px; align-items:center; }
-  .size-chip { min-width:40px; text-align:center; border:1px solid #314257; border-radius:8px; padding:4px 8px; color:#dfe9ff; }
-  .ads { background:#0f1620b0; border:1px dashed #243349; border-radius:12px; padding:14px; color:#9eb0c8; text-align:center; }
-  footer { margin:24px auto; max-width:980px; padding:12px 16px; color:#9fb1c8; border-top:1px solid rgba(255,255,255,0.1); display:flex; gap:12px; flex-wrap:wrap; justify-content:space-between; font-size:13px; }
-  footer a { color:#9fbef6; text-decoration:none; }
-  footer a:hover { text-decoration:underline; }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>솔리드옴므 아울렛 재고 조회</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <style>
+    :root{
+      --bg:#0b1116;
+      --panel:#141b22cc;
+      --ink:#e5eef7;
+      --ink-dim:#9fb0c3;
+      --brand:#00d2ff;
+      --pill-ok:#16a34a;     /* 주문가능 */
+      --pill-eta:#ca8a04;    /* 입고 예정(물류만 재고) */
+      --pill-low:#f59e0b;    /* 품절임박 */
+      --pill-oos:#ef4444;    /* 품절 (혹시 대비) */
+      --btn:#1f2937;
+      --btn-hover:#263244;
+      --bd:#263244;
+      --chip:#0f172a;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; color:var(--ink); background:#0b1116;
+      font:15px/1.6 system-ui,-apple-system,Segoe UI,Roboto,'Noto Sans KR',sans-serif;
+      min-height:100vh;
+      background-image:url("./031.jpg");
+      background-size:cover;
+      background-attachment:fixed;
+      background-position:center top;
+    }
+    .wrap{max-width:1080px;margin:24px auto;padding:0 16px}
+    header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:10px}
+    h1{font-size:22px;margin:0}
+    .actions{display:flex;gap:10px}
+    .btn{
+      background:var(--btn); border:1px solid var(--bd); color:var(--ink);
+      padding:10px 14px; border-radius:999px; text-decoration:none;
+    }
+    .btn:hover{background:var(--btn-hover)}
+    .card{
+      background:var(--panel); border:1px solid var(--bd); border-radius:18px;
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      padding:16px 16px;
+      margin:16px 0;
+    }
+    .label{font-weight:700;margin-bottom:8px}
+    .searchbox{
+      display:flex; gap:12px; align-items:center;
+      background:#0b1320; border:1px solid var(--bd); border-radius:14px; padding:12px;
+    }
+    .searchbox input{
+      flex:1; background:transparent; border:0; outline:0; color:var(--ink); font-size:16px;
+    }
+    .hint{color:var(--ink-dim); font-size:12px; margin-top:8px}
+    .result{padding:12px 12px}
+    .group{border:1px solid var(--bd); border-radius:14px; padding:12px; margin-top:12px; background:#0b1320}
+    .group-head{display:flex; align-items:center; gap:10px; justify-content:space-between}
+    .code{font-weight:800; letter-spacing:.5px}
+    select, .select{
+      background:#0e1625; color:var(--ink); border:1px solid var(--bd);
+      border-radius:10px; padding:8px 10px; min-width:120px;
+    }
+    .sizes{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
+    .size-pill{
+      display:flex; align-items:center; gap:8px;
+      background:var(--chip); border:1px solid var(--bd); border-radius:999px;
+      padding:8px 10px;
+    }
+    .status{font-size:12px; font-weight:700; padding:2px 8px; border-radius:999px; color:#fff}
+    .s-ok{background:var(--pill-ok)}
+    .s-eta{background:var(--pill-eta)}
+    .s-low{background:var(--pill-low)}
+    .s-oos{background:var(--pill-oos)}
+    .order{margin-left:auto}
+    .footer{color:var(--ink-dim); font-size:12px; text-align:center; padding:24px 6px}
+    .footer a{color:var(--ink-dim); text-decoration:none; margin:0 8px}
+    .ad{height:84px; border:1px dashed #2b3b52; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#85a2c0; margin-top:14px}
+    .sr{position:absolute;left:-9999px}
+  </style>
 </head>
 <body>
-  <header>
-    <h1>솔리드옴므 아울렛 재고 조회</h1>
-    <div class="pills">
-      <a class="pill" href="tel:0221369886">매장 전화연결</a>
-      <a class="pill" href="https://center-pf.kakao.com/_EfjEj/chats" target="_blank" rel="noopener">카카오채널 연결</a>
-    </div>
-  </header>
-
-  <div class="container">
-    <div class="card">
-      <h2>검색</h2>
-      <div class="row">
-        <input id="q" class="search" placeholder="예: s243ts26, 로고 티셔츠…" />
+  <div class="wrap">
+    <header>
+      <h1>솔리드옴므 아울렛 재고 조회</h1>
+      <div class="actions">
+        <a class="btn" href="tel:02-2136-9886">매장 전화연결</a>
+        <a class="btn" href="https://center-pf.kakao.com/_EfjEj/chats" target="_blank" rel="noopener">카카오채널 연결</a>
       </div>
-    </div>
+    </header>
 
+    <!-- 검색 -->
     <div class="card">
-      <h2>재고 결과</h2>
-      <div id="results" class="grid" style="display:grid; gap:12px;"></div>
-      <div id="nores" style="display:none; color:#9fb1c8;">검색 결과가 없습니다.</div>
-      <div style="height:10px"></div>
-      <div style="color:#9fb1c8;">※ “주문” 버튼은 Google Forms로 이동하며, 상품정보가 자동으로 채워집니다.</div>
-    </div>
-
-    <div class="card">
-      <div class="ads" id="ad-placeholder">
-        [광고 영역] 커스텀 도메인 연결 + AdSense 승인 후 스크립트를 여기에 붙이면 노출됩니다.
+      <div class="label">검색</div>
+      <div class="searchbox">
+        <label class="sr" for="q">검색</label>
+        <input id="q" placeholder="예: s243ts26, 로고 티셔츠…" />
+        <button class="btn" id="doSearch">검색</button>
       </div>
+      <div class="hint">검색은 <b>상품코드/품명</b>에 부분일치로 동작합니다.</div>
+    </div>
+
+    <!-- 결과 -->
+    <div class="card">
+      <div class="label">재고 결과</div>
+      <div id="result" class="result"></div>
+      <div class="ad">[광고 영역] 커스텀 도메인 연결 + AdSense 승인 후 스크립트를 여기에 붙이면 노출됩니다.</div>
+    </div>
+
+    <div class="footer">
+      © SOLID HOMME Outlet · 재고 조회/주문 문의
+      · <a href="./about.html">브랜드 소개</a>
+      · <a href="./privacy.html">개인정보처리방침</a>
+      · <a href="tel:02-2136-9886">매장 전화연결</a>
+      · <a href="https://center-pf.kakao.com/_EfjEj/chats" target="_blank" rel="noopener">카카오채널 연결</a>
     </div>
   </div>
 
-  <footer>
-    <div>© SOLID HOMME Outlet · 재고 조회/주문 문의</div>
-    <div style="display:flex; gap:12px; flex-wrap:wrap;">
-      <a href="./about.html">브랜드 소개</a>
-      <a href="./privacy.html">개인정보처리방침</a>
-      <a href="tel:0221369886">매장 전화연결</a>
-      <a href="https://center-pf.kakao.com/_EfjEj/chats" target="_blank" rel="noopener">카카오채널 연결</a>
-    </div>
-  </footer>
+  <script>
+    // ===== 공통 =====
+    const nz = (v)=> v==null ? "" : String(v).trim();
+    const norm = (s)=> nz(s).toLowerCase().replace(/\s+/g,"");
 
-<script>
-const JSON_URL = "./inventory.json";
-const nz = (v)=> (v==null?"":String(v).trim());
-function badgeClass(st){ if(st==="주문가능")return"badge ok"; if(nz(st).startsWith("입고 예정"))return"badge incoming"; if(st==="품절임박")return"badge warn"; return"badge";}
-function buildOrderLink(r){const u=new URL("https://docs.google.com/forms/d/e/FORM_ID/viewform");u.searchParams.set("usp","pp_url");u.searchParams.set("entry.1111111111",r["상품코드"]);u.searchParams.set("entry.2222222222",r["품명"]);u.searchParams.set("entry.3333333333",r["색상"]);u.searchParams.set("entry.4444444444",r["사이즈"]);u.searchParams.set("entry.5555555555","1");return u.toString();}
-let ALL_ROWS=[];let GROUPS=[];let VIEW_LIST=[];
-async function loadData(){try{const r=await fetch(JSON_URL,{cache:"no-store"});const d=await r.json();ALL_ROWS=Array.isArray(d.rows)?d.rows:[]}catch{ALL_ROWS=[]}buildGroups();applySearch("")}
-function buildGroups(){const byCode=new Map();for(const r of ALL_ROWS){const code=nz(r["상품코드"]);if(!code)continue;const name=nz(r["품명"]);const color=nz(r["색상"]);if(!byCode.has(code))byCode.set(code,{code,name,colors:new Map()});const g=byCode.get(code);if(!g.colors.has(color))g.colors.set(color,[]);g.colors.get(color).push(r)}GROUPS=Array.from(byCode.values()).map(g=>{const colors=Array.from(g.colors.entries()).map(([c,i])=>({color:c,items:i}));return{code:g.code,name:g.name,colors}});}
-function render(){const root=document.getElementById("results");const empty=document.getElementById("nores");root.innerHTML="";if(!VIEW_LIST.length){empty.style.display="block";return;}empty.style.display="none";for(const prod of VIEW_LIST){const wrap=document.createElement("div");wrap.className="product";const head=document.createElement("div");head.className="product-head";const left=document.createElement("div");left.innerHTML=`<div class="title">${nz(prod.code)}</div>`;const right=document.createElement("div");right.className="controls";const sel=document.createElement("select");sel.className="select";for(const c of prod.colors){const o=document.createElement("option");o.value=c.color;o.textContent=c.color||"(색상없음)";sel.appendChild(o);}right.appendChild(sel);head.appendChild(left);head.appendChild(right);wrap.appendChild(head);const sizes=document.createElement("div");sizes.className="sizes";wrap.appendChild(sizes);function draw(color){sizes.innerHTML="";const col=prod.colors.find(c=>c.color===color)||prod.colors[0];for(const r of(col?.items||[])){const line=document.createElement("div");line.className="size-row";const l=document.createElement("div");l.className="size-left";const chip=document.createElement("div");chip.className="size-chip";chip.textContent=nz(r["사이즈"])||"-";const b=document.createElement("span");b.className=badgeClass(nz(r["상태"]));b.textContent=nz(r["상태"]);l.appendChild(chip);l.appendChild(b);const order=document.createElement("a");order.className="btn";order.target="_blank";order.rel="noopener";order.textContent="주문";order.href=buildOrderLink(r);line.appendChild(l);line.appendChild(order);sizes.appendChild(line)}}sel.addEventListener("change",e=>draw(e.target.value));draw(sel.value||prod.colors[0]?.color||"");root.appendChild(wrap);}}
-function applySearch(q){const qq=nz(q).toLowerCase();VIEW_LIST=GROUPS.filter(g=>nz(g.code).toLowerCase().includes(qq)||nz(g.name).toLowerCase().includes(qq));render();}
-document.getElementById("q").addEventListener("input",e=>applySearch(e.target.value));
-loadData();
-</script>
+    // 사이즈 정렬 규칙(상품코드 기반)
+    const SIZE_RULES = [
+      { keys:["ts","tsa","sh","sha","ds","jp","jpa","dn","dna","hc","sj","cj","kn","kna","lj","lja"], order:["44","46","48","50","52"] },
+      { keys:["pt","pta","sp"], order:["30","31","32","33","34","36"] },
+      { keys:["su"], order:["39","40","41","42","43"] },
+    ];
+    function extractSizeOrder(code){
+      const c = norm(code);
+      for(const r of SIZE_RULES) for(const k of r.keys) if(c.includes(k)) return r.order;
+      return null;
+    }
+
+    // 상태 → 클래스
+    function statusClass(s){
+      s = nz(s);
+      if(s.includes("입고")) return "s-eta";
+      if(s.includes("임박")) return "s-low";
+      if(s.includes("품절")) return "s-oos";
+      return "s-ok";
+    }
+
+    // ===== 데이터 로드 =====
+    let ALL = [];
+    fetch("./inventory.json?_="+Date.now())
+      .then(r=>r.json())
+      .then(arr=>{
+        if(!Array.isArray(arr)) throw new Error("inventory.json 형식이 배열이 아닙니다.");
+        ALL = arr.map(x=>({
+          code: nz(x["상품코드"]),
+          name: nz(x["품명"]),
+          color: nz(x["색상"]),
+          size: nz(x["사이즈"]),
+          status: nz(x["상태"])
+        }));
+      })
+      .catch(e=>{
+        const el = document.getElementById("result");
+        el.textContent = "inventory.json을 불러오지 못했습니다: " + e.message;
+      });
+
+    // ===== 렌더링 =====
+    function renderGroups(rows){
+      const wrap = document.getElementById("result");
+      wrap.innerHTML = "";
+
+      if(!rows.length){
+        wrap.textContent = "검색 결과가 없습니다.";
+        return;
+      }
+
+      // 그룹핑: 상품코드 → {colors → sizes}
+      const byCode = new Map();
+      for(const r of rows){
+        if(!byCode.has(r.code)) byCode.set(r.code, []);
+        byCode.get(r.code).push(r);
+      }
+
+      for(const [code, list] of byCode){
+        // 색상 목록
+        const colors = Array.from(new Set(list.map(x=>x.color).filter(Boolean)));
+        colors.sort((a,b)=> a.localeCompare(b));
+
+        // 사이즈 정렬
+        const order = extractSizeOrder(code);
+        const sizeSort = (a,b)=>{
+          if(!order) return a.localeCompare(b);
+          const ia = order.indexOf(a), ib = order.indexOf(b);
+          const aa = ia<0? 998: ia, bb = ib<0? 998: ib;
+          return aa===bb ? a.localeCompare(b) : aa-bb;
+        };
+
+        // 초기 색상
+        const defaultColor = colors[0] || "";
+
+        // 그룹 DOM
+        const group = document.createElement("div");
+        group.className = "group";
+
+        const head = document.createElement("div");
+        head.className = "group-head";
+
+        const left = document.createElement("div");
+        left.innerHTML = `<div class="code">${code}</div>`;
+
+        const right = document.createElement("div");
+        // 색상 선택 셀렉트
+        const sel = document.createElement("select");
+        for(const c of colors.length? colors: ["(색상없음)"]){
+          const o = document.createElement("option");
+          o.value = c; o.textContent = c || "(색상없음)";
+          sel.appendChild(o);
+        }
+        sel.className = "select";
+        sel.value = defaultColor;
+        right.appendChild(sel);
+
+        head.appendChild(left);
+        head.appendChild(right);
+        group.appendChild(head);
+
+        // 사이즈 그리드
+        const sizesBox = document.createElement("div");
+        sizesBox.className = "sizes";
+        group.appendChild(sizesBox);
+
+        // 사이즈 렌더 함수
+        function drawSizes(color){
+          sizesBox.innerHTML = "";
+          const rows = list.filter(x=> (x.color || "") === (color || ""));
+          const sizes = Array.from(new Set(rows.map(x=>x.size))).sort(sizeSort);
+          if(!sizes.length){
+            const span = document.createElement("div");
+            span.style.color = "#93a4ba";
+            span.textContent = "선택한 색상의 사이즈 정보가 없습니다.";
+            sizesBox.appendChild(span);
+            return;
+          }
+          for(const sz of sizes){
+            const item = rows.find(x=> x.size===sz);
+            const pill = document.createElement("div");
+            pill.className = "size-pill";
+            const tag = document.createElement("span");
+            tag.textContent = sz;
+            const st = document.createElement("span");
+            st.className = "status " + statusClass(item?.status||"");
+            st.textContent = item?.status || "정보없음";
+            pill.appendChild(tag);
+            pill.appendChild(st);
+            sizesBox.appendChild(pill);
+          }
+        }
+        drawSizes(defaultColor);
+        sel.addEventListener("change", ()=> drawSizes(sel.value));
+
+        wrap.appendChild(group);
+      }
+    }
+
+    // ===== 검색 =====
+    function search(){
+      const q = norm(document.getElementById("q").value);
+      if(!q){ document.getElementById("result").textContent = "검색어를 입력하세요."; return; }
+      // 상품코드/품명 부분일치
+      const out = ALL.filter(r=> norm(r.code).includes(q) || norm(r.name).includes(q));
+      renderGroups(out);
+    }
+    document.getElementById("doSearch").addEventListener("click", search);
+    document.getElementById("q").addEventListener("keydown", e=>{
+      if(e.key==="Enter") search();
+    });
+  </script>
 </body>
 </html>
