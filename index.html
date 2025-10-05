@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>재고따기 — 고객용(앱 설치 가능, 오프라인 지원)</title>
+
+<!-- PWA: 색상/테마 -->
+<meta name="theme-color" content="#0b0f14" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" sizes="192x192" href="icons/icon-192.png" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+
+<!-- 기본 폰트/스타일 -->
+<style>
+  :root { --bg:#0b0f14; --card:#121820; --muted:#7a8593; --fg:#e8eef6; --accent:#5bbcff; }
+  html,body { margin:0; padding:0; background:var(--bg); color:var(--fg); font:14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", sans-serif; }
+  header { padding:16px 20px; border-bottom:1px solid #1c2430; display:flex; gap:12px; align-items:center; flex-wrap:wrap;}
+  header h1 { margin:0; font-size:18px; }
+  .pill { background:#0f1620; border:1px solid #233042; padding:6px 10px; border-radius:100px; color:var(--muted); }
+  .container { padding:16px; display:grid; gap:16px; grid-template-columns: 1fr; max-width:1000px; margin:0 auto;}
+  .card { background:var(--card); border:1px solid #1c2430; border-radius:14px; padding:14px; }
+  .card h2 { margin:0 0 10px 0; font-size:16px; }
+  .hint { color:var(--muted); font-size:12px; }
+  .search { width:100%; padding:12px 14px; border-radius:10px; border:1px solid #273547; background:#0f1620; color:var(--fg); }
+  .small { font-size:12px; color:#98a7bd; }
+  .right { text-align:right; }
+  table { width:100%; border-collapse:collapse; }
+  th, td { border-bottom:1px solid #202a37; padding:8px; font-size:13px; text-align:left; vertical-align:top;}
+  th { color:#a6b3c4; position:sticky; top:0; background:#111722; }
+  .badge { display:inline-block; padding:3px 7px; border-radius:8px; font-size:11px; border:1px solid #2a3950; color:#cfe8ff;}
+  .ok { background:#12321f; border-color:#1f5c37; color:#c6ffdf; }
+  .warn { background:#33240f; border-color:#6b4b17; color:#ffe1b8; }
+  .incoming { background:#1e2240; border-color:#3d4aac; color:#d2d8ff; }
+  .btn { background:linear-gradient(180deg,#1c2735,#151e2a); border:1px solid #273547; color:#d9e7ff; padding:8px 12px; border-radius:10px; cursor:pointer; text-decoration:none; }
+  .btn:disabled { opacity:.5; cursor:not-allowed; }
+  .toolrow { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>재고따기 — 고객 조회/주문 문의</h1>
+    <span class="pill">PWA 설치 가능 · 오프라인 캐시 · 서버비 0원</span>
+  </header>
+
+  <div class="container">
+    <div class="card">
+      <h2>검색</h2>
+      <div class="toolrow">
+        <input id="q" class="search" placeholder="예: s243ts26, 로고 티셔츠…" />
+        <button id="installBtn" class="btn" style="display:none;">앱 설치</button>
+      </div>
+      <div style="height:8px"></div>
+      <div class="small">검색은 <b>상품코드/품명</b>에 부분일치로 동작합니다. (오프라인에서도 최근 데이터로 검색 가능)</div>
+    </div>
+
+    <div class="card">
+      <h2>재고 결과</h2>
+      <div style="max-height:65vh; overflow:auto; border:1px solid #1c2430; border-radius:10px;">
+        <table id="tbl">
+          <thead>
+            <tr>
+              <th>상품코드</th>
+              <th>품명</th>
+              <th>색상</th>
+              <th>사이즈</th>
+              <th class="right">매장</th>
+              <th class="right">물류</th>
+              <th class="right">전체</th>
+              <th>상태</th>
+              <th class="right">정가</th>
+              <th class="right">판매가</th>
+              <th class="right">주문</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div style="height:10px"></div>
+      <div class="small hint">※ 주문 버튼은 Google Forms로 이동하며, 상품정보가 자동으로 채워집니다.</div>
+    </div>
+  </div>
+
+<script>
+/* ===== 설정(여기만 바꾸세요): 구글폼 ===== */
+const GOOGLE_FORM_BASE = "https://docs.google.com/forms/d/e/FORM_ID/viewform";
+const FORM_ENTRY = {
+  상품코드: "entry.1111111111",
+  품명:    "entry.2222222222",
+  색상:    "entry.3333333333",
+  사이즈:  "entry.4444444444",
+  수량:    "entry.5555555555"    // 폼에 ‘수량’ 필드도 하나 만들어 두세요(기본 1)
+};
+
+/* ===== 데이터 URL (같은 폴더의 inventory.json) ===== */
+const JSON_URL = "./inventory.json";
+
+/* ===== 유틸 ===== */
+const nz = (v)=> (v==null?"":String(v).trim());
+const fmt = (n)=> (n==null||isNaN(n)?"":Number(n).toLocaleString());
+const fmtWon = (n)=> (n==null||isNaN(n)?"":Number(n).toLocaleString()+"원");
+function badgeClass(st){
+  if (st==="주문가능") return "badge ok";
+  if (nz(st).startsWith("입고 예정")) return "badge incoming";
+  if (st==="품절임박") return "badge warn";
+  return "badge";
+}
+function buildOrderLink(row){
+  const p = new URL(GOOGLE_FORM_BASE);
+  p.searchParams.set("usp","pp_url");
+  p.searchParams.set(FORM_ENTRY.상품코드, nz(row["상품코드"]));
+  p.searchParams.set(FORM_ENTRY.품명, nz(row["품명"]));
+  p.searchParams.set(FORM_ENTRY.색상, nz(row["색상"]));
+  p.searchParams.set(FORM_ENTRY.사이즈, nz(row["사이즈"]));
+  p.searchParams.set(FORM_ENTRY.수량, "1");
+  return p.toString();
+}
+
+/* ===== 데이터 로딩/렌더 ===== */
+let ALL_ROWS = [];
+let VIEW_ROWS = [];
+
+async function loadData(){
+  // 최신 데이터 우선(network-first), 실패 시 서비스워커 캐시(오프라인)로 대체
+  try {
+    const res = await fetch(JSON_URL, {cache:"no-store"});
+    if (!res.ok) throw new Error(res.statusText);
+    const data = await res.json();
+    ALL_ROWS = Array.isArray(data.rows)? data.rows: [];
+    VIEW_ROWS = ALL_ROWS.slice(0,1000);
+    render();
+  } catch (e) {
+    // 오프라인 등으로 실패 시 그냥 캐시된 index.html이 보여지고,
+    // service-worker가 inventory.json도 캐시해둔 것을 써 줍니다(아래 SW 전략 참고).
+    console.warn("네트워크 실패 → 캐시된 데이터 사용을 시도합니다:", e);
+    try {
+      const res = await fetch(JSON_URL); // 캐시 히트 기대
+      const data = await res.json();
+      ALL_ROWS = Array.isArray(data.rows)? data.rows: [];
+      VIEW_ROWS = ALL_ROWS.slice(0,1000);
+      render();
+    } catch (e2) {
+      alert("데이터를 불러오지 못했습니다. (오프라인 캐시 없음)");
+    }
+  }
+}
+
+function render(){
+  const tb = document.querySelector("#tbody");
+  tb.innerHTML = "";
+  for (const r of VIEW_ROWS){
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${nz(r["상품코드"])}</td>
+      <td>${nz(r["품명"])}</td>
+      <td>${nz(r["색상"])}</td>
+      <td>${nz(r["사이즈"])}</td>
+      <td class="right">${fmt(r["매장재고"])}</td>
+      <td class="right">${fmt(r["창고재고"])}</td>
+      <td class="right">${fmt(r["전체재고"])}</td>
+      <td><span class="${badgeClass(nz(r["상태"]))}">${nz(r["상태"])}</span></td>
+      <td class="right">${fmtWon(r["소비자가"])}</td>
+      <td class="right">${fmtWon(r["판매가"])}</td>
+      <td class="right"><a class="btn" href="${buildOrderLink(r)}" target="_blank" rel="noopener">주문</a></td>
+    `;
+    tb.appendChild(tr);
+  }
+}
+
+document.querySelector("#q").addEventListener("input", (e)=>{
+  const q = nz(e.target.value).toLowerCase();
+  if (!q){ VIEW_ROWS = ALL_ROWS.slice(0,1000); render(); return; }
+  VIEW_ROWS = ALL_ROWS.filter(r=>{
+    const code = nz(r["상품코드"]).toLowerCase();
+    const name = nz(r["품명"]).toLowerCase();
+    return code.includes(q) || name.includes(q);
+  }).slice(0,1000);
+  render();
+});
+
+/* ===== PWA: 서비스워커 등록 & 설치 버튼 ===== */
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", async () => {
+    try {
+      await navigator.serviceWorker.register("./service-worker.js");
+      // console.log("SW registered");
+    } catch (e) {
+      console.warn("SW register failed:", e);
+    }
+  });
+}
+
+let deferredPrompt = null;
+window.addEventListener("beforeinstallprompt", (e)=>{
+  e.preventDefault();
+  deferredPrompt = e;
+  const btn = document.getElementById("installBtn");
+  if (btn) btn.style.display = "inline-block";
+});
+document.getElementById("installBtn")?.addEventListener("click", async ()=>{
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;  // 사용자의 선택 대기
+  deferredPrompt = null;
+  document.getElementById("installBtn").style.display = "none";
+});
+
+loadData();
+</script>
+</body>
+</html>
