@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>솔리드옴므 아울렛재고조회</title>
+<title>솔리드옴므 아울렛 재고 조회</title>
 
 <meta name="theme-color" content="#0b0f14" />
 <link rel="manifest" href="manifest.webmanifest" />
@@ -12,10 +12,12 @@
 
 <style>
   :root { --bg:#0b0f14; --card:#121820; --muted:#7a8593; --fg:#e8eef6; --accent:#5bbcff; }
-  html,body { margin:0; padding:0; background:var(--bg); color:var(--fg); font:14px/1.6 system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", sans-serif; }
-  header { padding:16px 20px; border-bottom:1px solid #1c2430; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
-  header h1 { margin:0; font-size:18px; }
-  .pill { background:#0f1620; border:1px solid #233042; padding:6px 10px; border-radius:100px; color:var(--muted); }
+  html,body { margin:0; padding:0; background:var(--bg); color:var(--fg); font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans KR",sans-serif; }
+  header { padding:16px 20px; border-bottom:1px solid #1c2430; display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:space-between; }
+  header h1 { margin:0; font-size:20px; letter-spacing:.2px; }
+  .pills { display:flex; gap:8px; flex-wrap:wrap; }
+  .pill { background:#0f1620; border:1px solid #233042; padding:8px 12px; border-radius:100px; color:#cfe1ff; text-decoration:none; }
+  .pill:hover { border-color:#355079; }
   .container { padding:16px; display:grid; gap:16px; max-width:980px; margin:0 auto; }
   .card { background:var(--card); border:1px solid #1c2430; border-radius:14px; padding:14px; }
   .card h2 { margin:0 0 10px 0; font-size:16px; }
@@ -38,14 +40,21 @@
   .size-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 10px; border:1px solid #223044; border-radius:10px; background:#0f1620; }
   .size-left { display:flex; gap:10px; align-items:center; }
   .size-chip { min-width:40px; text-align:center; border:1px solid #314257; border-radius:8px; padding:4px 8px; color:#dfe9ff; }
-  .price { color:#cfe1ff; font-size:12px; }
   .ads { background:#0f1620; border:1px dashed #243349; border-radius:12px; padding:14px; color:#9eb0c8; text-align:center; }
+  footer { margin:24px auto; max-width:980px; padding:12px 16px; color:#9fb1c8; border-top:1px solid #1c2430; display:flex; gap:12px; flex-wrap:wrap; justify-content:space-between; font-size:13px; }
+  footer a { color:#9fbef6; text-decoration:none; }
+  footer a:hover { text-decoration:underline; }
 </style>
 </head>
 <body>
   <header>
     <h1>솔리드옴므 아울렛 재고 조회</h1>
-    <span class="pill">매장전화연결 카카오채널연결</span>
+    <div class="pills">
+      <!-- 전화 연결 -->
+      <a class="pill" href="tel:0221369886">매장 전화연결</a>
+      <!-- 카카오 채널 연결 -->
+      <a class="pill" href="https://center-pf.kakao.com/_EfjEj/chats" target="_blank" rel="noopener">카카오채널 연결</a>
+    </div>
   </header>
 
   <div class="container">
@@ -67,13 +76,23 @@
       <div class="hint">※ “주문” 버튼은 Google Forms로 이동하며, 상품정보가 자동으로 채워집니다.</div>
     </div>
 
-    <!-- 선택 사항: 여백에 광고영역(나중에 AdSense 승인/스크립트 붙이면 노출됨) -->
+    <!-- 광고 영역(AdSense 승인 후 스크립트를 이 div에 삽입) -->
     <div class="card">
       <div class="ads" id="ad-placeholder">
         [광고 영역] 커스텀 도메인 연결 + AdSense 승인 후 스크립트를 여기에 붙이면 노출됩니다.
       </div>
     </div>
   </div>
+
+  <footer>
+    <div>© SOLID HOMME Outlet · 재고 조회/주문 문의</div>
+    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+      <a href="./about.html">브랜드 소개</a>
+      <a href="./privacy.html">개인정보처리방침</a>
+      <a href="tel:0221369886">매장 전화연결</a>
+      <a href="https://center-pf.kakao.com/_EfjEj/chats" target="_blank" rel="noopener">카카오채널 연결</a>
+    </div>
+  </footer>
 
 <script>
 /* ===== 설정(여기만 바꾸세요): 구글폼 ===== */
@@ -138,7 +157,6 @@ function buildGroups(){
     const code = nz(r["상품코드"]); if(!code) continue;
     const name = nz(r["품명"]);
     const color = nz(r["색상"]);
-    const size  = nz(r["사이즈"]);
     if(!byCode.has(code)){
       byCode.set(code, { code, name, colors:new Map() });
     }
@@ -150,7 +168,6 @@ function buildGroups(){
     // 색상/사이즈 정렬
     const colors = Array.from(g.colors.entries()).map(([color, items])=>{
       items = items.slice().sort((a,b)=>{
-        // 사이즈 숫자/문자 혼용 정렬
         const av = nz(a["사이즈"]), bv = nz(b["사이즈"]);
         const ai = parseInt(av,10), bi = parseInt(bv,10);
         if(!isNaN(ai) && !isNaN(bi) && ai!==bi) return ai-bi;
@@ -244,7 +261,7 @@ function render(){
 function applySearch(q){
   const qq = nz(q).toLowerCase();
   if(!qq){
-    VIEW_LIST = GROUPS.slice(0,200); // 너무 많을 때 대비
+    VIEW_LIST = GROUPS.slice(0,200);
   }else{
     VIEW_LIST = GROUPS.filter(g=>{
       const code = nz(g.code).toLowerCase();
