@@ -4,8 +4,8 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>솔리드옴므 아울렛 재고 조회</title>
-<link rel="manifest" href="manifest.webmanifest?v=11" />
-<!-- 다음(카카오) 주소검색: 무료, 웹 전용 -->
+<link rel="manifest" href="manifest.webmanifest?v=12" />
+<!-- 다음(카카오) 주소검색: 무료 -->
 <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 <style>
   :root { --bg:#0b0f14; --card:#121820; --muted:#94a3b8; --fg:#e8eef6; --accent:#5bbcff;
@@ -40,6 +40,10 @@
   .price .now{font-weight:800;font-size:17px}
   .price .orig{color:#a8b5c6;text-decoration:line-through}
   .price .rate{color:#9fe4b0}
+  .totalBox{margin-top:8px;border:1px dashed #2e3c52;border-radius:12px;padding:8px 10px;background:#0f172a}
+  .totalBox .line{display:flex;justify-content:space-between;margin:2px 0}
+  .totalBox .sum{font-weight:800}
+  .hint{font-size:12px;color:#a5b4c6}
   footer{margin:24px 0;color:#9aa7b8;font-size:13px;display:flex;gap:14px;flex-wrap:wrap;justify-content:flex-end}
   .hero{position:fixed;inset:0;z-index:-1;background:url('031.jpg') center/cover no-repeat;filter:brightness(.35)}
   /* ===== 모달: 작게 + 스크롤 ===== */
@@ -76,7 +80,7 @@
 
   <div class="card" style="margin-bottom:12px">
     <div class="row" style="gap:8px">
-      <input id="q" class="search" placeholder="예: s243ts26, 로고 티셔츠…" />
+      <input id="q" class="search" placeholder="예: s243ts26…" />
       <button class="btn" id="srchBtn">검색</button>
     </div>
   </div>
@@ -90,11 +94,11 @@
     <a href="about.html">브랜드 소개</a>
     <a href="privacy.html">개인정보처리방침</a>
     <a href="tel:0221369886">매장 전화연결</a>
-    <a href="https://center-pf.kakao.com/_EfjEj/chats" target="_blank" rel="noopener">카카오채널 연결</a>
+    <a href="https://center-pf.kakao.com/_EfjEj/chats" target="_blank" rel="noopener">카카오문의 연결</a>
   </footer>
 </div>
 
-<!-- ===== 주문 모달 (작게 + 스크롤) ===== -->
+<!-- ===== 주문 모달 ===== -->
 <div id="orderBack" class="modalBack" onclick="closeOrder(event)">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modalHeader">
@@ -106,8 +110,8 @@
       <div id="orderSel" class="muted" style="margin-bottom:8px"></div>
 
       <div class="note small" style="margin:6px 0 10px 0">
-        <div>• <b>택배비</b> : <b>40만원 이상 무료</b> / 그 이하 <b>3,000원</b></div>
-        <div>• <b>교환/반품</b> : 수령 후 7일 이내 (택 제거/착용 흔적/오염 없을 때, 왕복 <b>7,000원</b>)</div>
+        <div>• <b>택배비</b> : <b>40만원 이상 무료</b> / 그 이하는 <b>3,000원</b></div>
+        <div>• <b>교환/반품</b> : 수령 후 7일 이내 (왕복 <b>7,000원</b>)</div>
         <div>• 오프라인 재고 연동이라 결제 후 품절 시 <b>전액 환불</b>됩니다.</div>
       </div>
 
@@ -132,10 +136,20 @@
         <input id="depositor" class="txt" placeholder="예: 홍길동" />
       </div>
 
-      <div class="formGrid" style="margin-top:6px">
+      <!-- 금액 요약 상자 -->
+      <div id="totalBox" class="totalBox" style="margin-top:8px">
+        <div class="line"><span>단가</span><span id="unitPrice">-</span></div>
+        <div class="line"><span>수량</span><span id="qtyView">1</span></div>
+        <div class="line"><span>소계</span><span id="subtotalView">-</span></div>
+        <div class="line"><span>배송비</span><span id="shipView">-</span></div>
+        <div class="line sum"><span id="totalLabel">결제금액</span><span id="totalView">-</span></div>
+        <div class="hint" id="shipHint" style="margin-top:4px"></div>
+      </div>
+
+      <div class="formGrid" style="margin-top:8px">
         <div>
           <div class="label">수령자 이름</div>
-          <input id="recvName" class="txt" placeholder="예: 김솔리드" />
+          <input id="recvName" class="txt" placeholder="예: 홍길동동" />
         </div>
         <div>
           <div class="label">연락처</div>
@@ -191,13 +205,16 @@
 </div>
 
 <script>
+/* ===== 상수 & 유틸 ===== */
 const INV_URL = `inventory.json?v=${Date.now()}`;
 const KAKAO_CHAT = 'https://center-pf.kakao.com/_EfjEj/chats';
+const FREE_SHIP_THRESHOLD = 400000; // 40만원
+const SHIP_FEE = 3000;              // 3천원
 
 const $  = s => document.querySelector(s);
 const nz = v => (v==null ? '' : String(v).trim());
 function toInt(v, d=0){ try{ const s=String(v??'').replace(/[^\d-]/g,'').trim(); if(!s||s==='-')return d; return parseInt(s,10);}catch{return d;} }
-function fmtWon(v){ return (v==null||v==='') ? '' : Number(v).toLocaleString()+'원'; }
+function fmtWon(v){ return (v==null||v==='') ? '-' : Number(v).toLocaleString()+'원'; }
 
 /* 상태 규칙(매장 우선) */
 function decideState(store, wh, total){
@@ -262,6 +279,48 @@ function priceHTML(rows){
   return `<div class="price">${a.join(' ')}</div>`;
 }
 
+/* ===== 결제별 총액 계산 =====
+   - 단가: 판매가(p)가 우선, 없으면 정가(q)
+   - 소계 = 단가 * 수량
+   - 계좌이체: 40만원 미만이면 배송비 3,000원 포함한 총액
+   - 카드결제: 총액은 소계(참고용), 배송비 3,000원 별도 안내만 표시
+*/
+function calcTotals(price, qty, pay){
+  const unit = (price.p!=null ? price.p : price.q);
+  const unitSafe = (unit==null ? 0 : unit);
+  const subtotal = unitSafe * qty;
+
+  let shipFee = 0;
+  let total = subtotal;
+  let hint = '';
+
+  if (subtotal >= FREE_SHIP_THRESHOLD){
+    hint = '40만원 이상 구매로 무료배송입니다.';
+  }else{
+    if (pay === '계좌이체'){
+      shipFee = SHIP_FEE;
+      total = subtotal + shipFee;
+      hint = '계좌이체: 40만원 미만은 배송비 3,000원이 총액에 포함됩니다.';
+    }else{
+      hint = '카드결제: 40만원 미만은 배송비 3,000원 계좌 이체 해주셔야 합니다다(결제 안내 시 고지).';
+    }
+  }
+  return { unit, subtotal, shipFee, total, hint };
+}
+
+function renderTotals(){
+  const qty = Math.max(1, parseInt($('#qty').value||'1',10));
+  const method = $('#payMethod').value || '계좌이체';
+  const t = calcTotals(cur.price||{}, qty, method);
+  $('#unitPrice').textContent   = fmtWon(t.unit);
+  $('#qtyView').textContent     = String(qty);
+  $('#subtotalView').textContent= fmtWon(t.subtotal);
+  $('#shipView').textContent    = (method==='계좌이체' || t.subtotal>=FREE_SHIP_THRESHOLD) ? fmtWon(t.shipFee) : '추가 예정';
+  $('#totalLabel').textContent  = (method==='계좌이체' ? '결제금액(계좌이체)' : '결제금액(예상)');
+  $('#totalView').textContent   = (method==='계좌이체' ? fmtWon(t.total) : fmtWon(t.subtotal));
+  $('#shipHint').textContent    = t.hint;
+}
+
 function render(list){
   if (!list.length){ $('#result').innerHTML = `<div style="color:#9aa7b8">검색 결과가 없습니다.</div>`; return; }
   const g = groupByStyle(list);
@@ -321,7 +380,6 @@ function updateSizes(id, item, color){
 function findAddr(){
   new daum.Postcode({
     oncomplete: function(d) {
-      // 도로명 주소/우편번호 채우기
       $('#zip').value  = d.zonecode || '';
       $('#road').value = d.roadAddress || d.address || '';
       $('#addrDetail').focus();
@@ -355,7 +413,8 @@ function openOrderDirect(el){
   $('#road').value = '';
   $('#addrDetail').value = '';
   $('#recvNote').value = '';
-  showDepositor(cur.pay==='계좌이체');
+  showDepositor(true);
+  renderTotals();
   updatePreview();
   $('#orderBack').style.display='flex';
 }
@@ -365,6 +424,7 @@ function choosePay(kind){
   cur.pay = kind;
   $('#payMethod').value = kind;
   showDepositor(kind==='계좌이체');
+  renderTotals();
   updatePreview();
 }
 function showDepositor(show){
@@ -372,8 +432,8 @@ function showDepositor(show){
 }
 
 ['qty','depositor','recvName','recvPhone','addrDetail','recvNote'].forEach(id=>{
-  document.addEventListener('input', (e)=>{ if (e.target && e.target.id===id) updatePreview(); });
-  document.addEventListener('change', (e)=>{ if (e.target && e.target.id===id) updatePreview(); });
+  document.addEventListener('input', (e)=>{ if (e.target && e.target.id===id) { renderTotals(); updatePreview(); } });
+  document.addEventListener('change', (e)=>{ if (e.target && e.target.id===id) { renderTotals(); updatePreview(); } });
 });
 
 function buildOrderText(){
@@ -393,14 +453,26 @@ function buildOrderText(){
     (r!=null && !isNaN(r))?`할인율 ${r}%`:''
   ].filter(Boolean).join(' / ') || '가격 정보 없음';
 
+  const method = $('#payMethod').value || '계좌이체';
+  const totals = calcTotals(cur.price||{}, qty, method);
+
+  const shipText = (totals.subtotal>=FREE_SHIP_THRESHOLD)
+    ? '무료배송(40만원 이상)'
+    : (method==='계좌이체' ? `배송비 포함 ${fmtWon(totals.shipFee)}` : '배송비 3,000원 추가 예정(카드)');
+
+  const payLine = (method==='계좌이체')
+    ? `결제방식: 계좌이체 (입금자: ${dep || '(입력)'} / 총 입금액: ${fmtWon(totals.total)} / 계좌: 국민 616 701 01 634455 솔리드(한홍명))`
+    : `결제방식: 카드결제 (예상 결제금액: ${fmtWon(totals.subtotal)} / 배송비 별도 안내)`;
+
   return (
 `[온라인 주문 요청]
 상품코드: ${cur.style}
 색상/사이즈: ${cur.color || '-'} / ${cur.size || '-'}
 수량: ${qty}
 가격: ${priceLine}
+배송: ${shipText}
 
-결제방식: ${cur.pay}${cur.pay==='계좌이체' ? ` (입금자: ${dep || '(입력)'}, 계좌: 국민 616 701 01 634455 솔리드(한홍명))` : ''}
+${payLine}
 
 [수령자 정보]
 이름: ${name}
