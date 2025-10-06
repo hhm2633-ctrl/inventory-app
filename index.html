@@ -3,449 +3,131 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>재고따기 | SOLID HOMME 가산점</title>
-<link rel="preconnect" href="https://cdn.jsdelivr.net" />
+<title>주문·배송·교환 안내 | SOLID HOMME 가산점</title>
 <style>
-  :root{--bg:#0b0f14;--card:#121820;--muted:#8ea1b5;--fg:#e8eef6;--accent:#5bbcff;--line:#1c2430}
-  html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans KR",sans-serif}
+  :root { --bg:#0b0f14; --card:#121820; --muted:#8ea1b5; --fg:#e8eef6; --accent:#5bbcff; }
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans KR",sans-serif;}
+  header{padding:16px 20px;border-bottom:1px solid #1c2430;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  header h1{margin:0;font-size:18px}
+  .pill{background:#0f1620;border:1px solid #233042;padding:6px 10px;border-radius:100px;color:var(--muted)}
+  .container{max-width:980px;margin:0 auto;padding:16px}
+  .card{background:var(--card);border:1px solid #1c2430;border-radius:14px;padding:16px;margin-bottom:14px}
+  h2{margin:0 0 10px 0;font-size:16px}
+  h3{margin:16px 0 8px 0;font-size:15px}
+  .muted{color:var(--muted)}
   a{color:var(--accent);text-decoration:none}
   a:hover{text-decoration:underline}
-  header{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap}
-  .brand{display:flex;align-items:center;gap:10px}
-  .logo{font-weight:800;letter-spacing:.6px}
-  nav{display:flex;gap:12px;flex-wrap:wrap}
-  .pill{background:#0f1620;border:1px solid #233042;color:var(--muted);padding:6px 10px;border-radius:999px}
-  .container{max-width:1100px;margin:0 auto;padding:14px}
-  .grid{display:grid;grid-template-columns:1fr 320px;gap:14px}
-  @media (max-width:960px){ .grid{grid-template-columns:1fr} }
-  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
-  h2{margin:0 0 8px 0;font-size:16px}
-  .hint{color:var(--muted);font-size:12px}
-  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  .search{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #273547;background:#0f1620;color:var(--fg)}
-  .select{padding:8px 10px;border-radius:10px;border:1px solid #273547;background:#0f1620;color:var(--fg)}
-  .btn{background:linear-gradient(180deg,#1c2735,#151e2a);border:1px solid #273547;color:#d9e7ff;padding:8px 12px;border-radius:10px;cursor:pointer}
-  .btn:disabled{opacity:.5;cursor:not-allowed}
-  .btn-ghost{background:transparent;border:1px dashed #2a3950;color:#cfe8ff;padding:8px 12px;border-radius:10px;cursor:pointer}
+  .faq-item{border-top:1px solid #1c2430}
+  .faq-q{cursor:pointer;padding:12px 0;display:flex;justify-content:space-between;gap:10px}
+  .faq-a{display:none;padding:0 0 12px 0;color:#d8e6ff}
   .badge{display:inline-block;padding:3px 8px;border-radius:999px;border:1px solid #2b394d;background:#0f1620;color:#d0e7ff;font-size:12px}
-  .ok{background:#12321f;border-color:#1f5c37;color:#c6ffdf}
-  .warn{background:#33240f;border-color:#6b4b17;color:#ffe1b8}
-  .incoming{background:#1e2240;border-color:#3d4aac;color:#d2d8ff}
-  .muted{color:var(--muted)}
-  .thumb{width:120px;height:120px;border-radius:12px;object-fit:cover;border:1px solid #1e2a30;background:#0b0f14}
-  @media (max-width:520px){ .thumb{width:90px;height:90px} }
-  .item{border-top:1px solid #17212d;padding:12px 0}
-  .sizes{display:flex;gap:8px;flex-wrap:wrap}
-  .sizeBtn{min-width:52px;padding:6px 10px;border-radius:10px;border:1px solid #2a3950;background:#0f1620;color:#e8f2ff;cursor:pointer}
-  .sizeBtn[disabled]{opacity:.4;cursor:not-allowed;text-decoration:line-through}
-  .status{margin-left:8px}
-  .priceBox{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
-  .priceNow{font-weight:800}
-  .priceList{color:#9fb0c7;text-decoration:line-through}
-  .priceSale{color:#a5ffcf}
-  footer{padding:18px 14px;color:var(--muted);border-top:1px solid var(--line);text-align:center}
-  footer .links{margin-bottom:6px}
-  /* 모달 */
-  .modalBack{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:30}
-  .modal{width:min(720px,92vw);max-height:86vh;overflow:auto;background:#111722;border:1px solid #243043;border-radius:14px;padding:16px}
-  .modal h3{margin:0 0 8px 0}
-  .field{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
-  .field label{width:110px;color:#b7c6da}
-  .field input,.field textarea,.field select{flex:1;min-width:200px;padding:10px;border-radius:10px;border:1px solid #2a3950;background:#0f1620;color:#e6f0ff}
-  .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  @media (max-width:720px){ .two{grid-template-columns:1fr} }
-  .dim{opacity:.7}
+  footer{padding:20px;color:var(--muted);border-top:1px solid #1c2430;text-align:center}
 </style>
 </head>
 <body>
   <header>
-    <div class="brand">
-      <div class="logo">SOLID HOMME 가산점</div>
-      <span class="pill">실시간 재고 · 주문</span>
-    </div>
-    <nav>
-      <a href="index.html">재고 조회</a>
-      <a href="about.html">브랜드 소개</a>
-      <a href="guide.html">주문·배송·교환 안내</a>
-      <a href="privacy.html">Privacy</a>
-    </nav>
+    <h1>주문·배송·교환 안내</h1>
+    <span class="pill">SOLID HOMME 가산점 고객센터 10:30–21:00</span>
   </header>
 
-  <div class="container grid">
-    <!-- 왼쪽: 결과 -->
-    <div>
-      <div class="card">
-        <h2>검색</h2>
-        <div class="row">
-          <input id="q" class="search" placeholder="예: s243ts26 (품번으로만 검색됩니다)" />
-          <button class="btn" id="btnSearch">검색</button>
-        </div>
-        <div class="hint" style="margin-top:6px">※ 품번(스타일 코드) 기준으로만 노출됩니다. 동일 품번의 여러 컬러는 상단 색상 선택으로 깔끔하게 정리됩니다.</div>
-      </div>
-
-      <div class="card" id="results">
-        <h2>결과</h2>
-        <div class="hint" id="help">검색어를 입력해 주세요.</div>
-        <div id="list"></div>
-      </div>
-    </div>
-
-    <!-- 오른쪽: 안내 -->
-    <aside class="card">
-      <h2>이용 안내</h2>
-      <ul style="margin:6px 0 0 16px">
-        <li><b>상태만 표시</b>: 재고 수량은 숨기고 <span class="badge ok">주문 가능</span> / <span class="badge incoming">주문 불가(미입고)</span> / <span class="badge warn">품절 임박</span> 으로만 표시합니다.</li>
-        <li><b>컬러 선택</b>: 동일 품번 다색상은 상단에서 색상 선택, <b>사이즈는 세로 버튼</b>으로 노출됩니다.</li>
-        <li><b>택배비</b>: 40만원 이상 <b>무료</b> / 미만 <b>3,000원</b>. 계좌이체는 자동 합산, 카드결제는 결제 시 안내.</li>
-        <li><b>문의</b>: <a href="tel:0221369886">02-2136-9886</a> / <a href="https://center-pf.kakao.com/_EfjEj/chats" target="_blank" rel="noopener">카카오 채널</a></li>
+  <div class="container">
+    <!-- 주문 안내 -->
+    <div class="card">
+      <h2>주문 방법</h2>
+      <div class="muted" style="margin-bottom:8px">상품 페이지에서 <b>사이즈별 “주문하기”</b>를 누르면 간단한 주문양식을 작성하실 수 있어요.</div>
+      <ul>
+        <li><b>결제 방식</b>: 계좌이체 / 카드결제</li>
+        <li><b>카카오 채널</b>: 주문 정보는 매장 카카오 채널로 접수되어 빠르게 확인·안내드립니다.</li>
+        <li><b>영업시간</b>: 10:30–21:00 (이후 접수 건은 다음 영업일 순차 연락)</li>
+        <li><b>문의</b>: <a href="tel:0221369886">02-2136-9886</a> · <a href="https://center-pf.kakao.com/_EfjEj/chats" target="_blank" rel="noopener">카카오 채널 열기</a></li>
       </ul>
-    </aside>
-  </div>
+    </div>
 
-  <!-- 주문 모달 -->
-  <div id="orderBack" class="modalBack" onclick="closeOrder(event)">
-    <div class="modal" onclick="event.stopPropagation()">
-      <h3>주문서 작성</h3>
-      <div class="muted" style="margin-bottom:8px">선택 상품: <span id="selProduct" class="badge"></span></div>
+    <!-- 결제/배송 -->
+    <div class="card">
+      <h2>결제 · 배송</h2>
+      <ul>
+        <li><b>배송비</b>: <b>40만원 이상 무료</b> / <b>40만원 미만 3,000원</b></li>
+        <li><b>계좌이체</b>: 3,000원 배송비가 결제 금액에 <b>자동 포함</b>됩니다.</li>
+        <li><b>카드결제</b>: 결제 단계에서 <b>배송비 안내</b>가 제공되며 40만원 미만 시 부과됩니다.</li>
+        <li><b>입금계좌</b>: 국민은행 <b>616-701-01-634455</b>  예금주 <b>솔리드(한홍명)</b></li>
+        <li><b>발송</b>: 결제 확인 후 영업일 기준 <b>당일~1일 내</b> 출고(택배 상황에 따라 변동)</li>
+      </ul>
+    </div>
 
-      <div class="two">
-        <div class="field"><label>이름</label><input id="f_name" placeholder="홍길동" /></div>
-        <div class="field"><label>연락처</label><input id="f_phone" placeholder="010-1234-5678" /></div>
-      </div>
+    <!-- 교환/반품 정책 -->
+    <div class="card">
+      <h2>교환 · 반품 정책 (요약)</h2>
+      <ul>
+        <li><b>교환 가능 기한</b>: 제품 수령 후 <b>7일 이내</b> (전자상거래법)</li>
+        <li><b>단순 변심 교환</b>: 왕복 택배비 <b>7,000원</b> 고객 부담</li>
+        <li><b>불량/오배송</b>: 택배비 전액 매장 부담, 동일 상품/사이즈 우선 교환</li>
+        <li><b>교환 불가</b>: 사용 흔적/세탁/오염/택 분리/구성품 분실/맞교환 요청/기간 경과 등</li>
+        <li><b>절차</b>: 카카오 채널로 주문번호·성함·연락처와 사유를 남겨 주세요. 신속히 안내드립니다.</li>
+      </ul>
+    </div>
 
-      <div class="field"><label>주소</label>
-        <input id="f_addr1" placeholder="도로명 주소" />
-      </div>
-      <div class="two">
-        <div class="field"><label>상세주소</label><input id="f_addr2" placeholder="동/호수 등" /></div>
-        <div class="field"><label>우편번호</label><input id="f_zip" placeholder="00000" /></div>
-      </div>
+    <!-- FAQ -->
+    <div class="card">
+      <h2>자주 묻는 질문(FAQ)</h2>
 
-      <div class="two">
-        <div class="field"><label>결제방식</label>
-          <select id="f_method">
-            <option value="bank">계좌이체</option>
-            <option value="card">카드결제</option>
-          </select>
+      <div class="faq-item">
+        <div class="faq-q"><span>재고 상태 기준은 어떻게 되나요?</span><span class="badge">재고</span></div>
+        <div class="faq-a">
+          <p>• <b>주문 가능</b>: 매장(한 곳이라도)에 재고가 있는 경우 (물류만 재고는 주문불가)<br>
+             • <b>주문 불가(미입고)</b>: 매장 재고 0이지만 물류 창고에만 재고가 있는 경우<br>
+             • <b>품절 임박</b>: 전체 재고 합이 9 이하인 경우</p>
         </div>
-        <div class="field"><label>입금자 성명</label><input id="f_depositor" placeholder="계좌이체 시 입력" /></div>
       </div>
 
-      <div class="field"><label>요청사항</label><textarea id="f_note" placeholder="요청사항을 입력해 주세요" rows="3"></textarea></div>
-
-      <div class="card" style="background:#0f1620;border:1px dashed #2b394d">
-        <div class="priceBox">
-          <div id="p_now" class="priceNow"></div>
-          <div id="p_list" class="priceList"></div>
-          <div id="p_sale" class="priceSale"></div>
+      <div class="faq-item">
+        <div class="faq-q"><span>주소 입력은 어떻게 하나요?</span><span class="badge">주문</span></div>
+        <div class="faq-a">
+          <p>주문 양식에서 <b>우편번호 찾기</b>로 도로명 주소 검색 후 상세주소까지 입력해 주세요. 인스타 인앱 브라우저에서 팝업이 안 뜨면 우측 상단 메뉴에서 <b>기본 브라우저로 열기</b>를 눌러 주세요.</p>
         </div>
-        <div class="muted" id="shipGuide" style="margin-top:6px"></div>
       </div>
 
-      <div class="row" style="justify-content:flex-end;margin-top:8px">
-        <button class="btn-ghost" onclick="closeOrder()">닫기</button>
-        <button class="btn" onclick="submitOrder()">카카오 채널로 주문 전송</button>
+      <div class="faq-item">
+        <div class="faq-q"><span>부분 반품/교환도 가능한가요?</span><span class="badge">교환/반품</span></div>
+        <div class="faq-a">
+          <p>세트/구성 상품이 아닌 경우 부분 교환·반품 가능합니다. 택/구성품이 훼손되면 불가합니다.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q"><span>영업시간 이후 결제했는데, 언제 연락 오나요?</span><span class="badge">상담</span></div>
+        <div class="faq-a">
+          <p>영업시간(10:30–21:00) 이후 건은 다음 영업일 <b>오픈 이후 순차 안내</b>드립니다.</p>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- 주문 확인중 모달 -->
-  <div id="pendingBack" class="modalBack" onclick="closePending(event)">
-    <div class="modal" onclick="event.stopPropagation()">
-      <h3>주문 확인중</h3>
-      <div class="muted" style="margin-bottom:10px">
-        영업시간 10:30~21:00 실시간 매장확인 연락드리며<br/>
-        영업시간 이후 접수 건은 다음 영업일 오픈 이후 순차 안내드립니다.<br/>
-        결제/이체 확인 후 연락드리겠습니다. 카카오 채널 알림을 확인해 주세요.
-      </div>
-      <div class="card" style="background:#0f1620;border:1px dashed #2b394d">
-        <b>택배비 안내</b><br/>
-        40만원 이상 구매 시 무료배송, 그 이하는 3,000원<br/><br/>
-        <b>단순 변심 교환</b> 왕복 택배비 7,000원<br/><br/>
-        <b>입금 계좌</b><br/>
-        국민 616-701-01-634455  (예금주: 솔리드/한홍명)
-      </div>
-      <div style="margin-top:10px">
-        <b>교환 정책</b><br/>
-        제품 수령 후 교환은 1주일 이내로 가능 합니다.
-      </div>
-      <div class="row" style="justify-content:flex-end;margin-top:10px">
-        <button class="btn" onclick="closePending()">확인</button>
-      </div>
+    <!-- 연락/고객센터 -->
+    <div class="card">
+      <h2>고객센터 · 문의</h2>
+      <p><b>전화</b> <a href="tel:0221369886">02-2136-9886</a> &nbsp;|&nbsp; <b>카카오 채널</b> <a href="https://center-pf.kakao.com/_EfjEj/chats" target="_blank" rel="noopener">채팅 열기</a></p>
+      <p class="muted">주문서 접수 후 “주문 확인중” 알림이 발송됩니다. 결제/이체 확인 뒤 최종 확정 안내를 드립니다.</p>
     </div>
   </div>
 
   <footer>
-    <div class="links">
+    <div style="margin-bottom:6px">
       <a href="index.html">재고 조회</a> ·
       <a href="about.html">브랜드 소개</a> ·
       <a href="guide.html">주문·배송·교환 안내</a> ·
-      <a href="privacy.html">Privacy Policy</a> ·
-      <a href="tel:0221369886">02-2136-9886</a> ·
-      <a href="https://center-pf.kakao.com/_EfjEj/chats" target="_blank" rel="noopener">카카오 채널</a>
+      <a href="privacy.html">Privacy Policy</a>
     </div>
     <div class="muted">© SOLID HOMME 가산점</div>
   </footer>
 
 <script>
-/* -----------------------------
-   간단 데이터 모델 (예시)
-   - 실제 데이터 바인딩은 변환기로 만든 inventory.json을 fetch 하거나
-     현재 페이지의 전역 dataRows에 주입해서 사용하세요.
-------------------------------*/
-let dataRows = []; // [{code, name, color, size, status, price_list, price_now, sale_rate}, ...]
-
-/* 무료 이미지 매칭 규칙: /images/품번__색상.jpg → 없으면 /images/품번.jpg → placeholder */
-function sanitizeColor(c){
-  if(!c) return '';
-  return String(c).trim().toUpperCase().replace(/\s+/g,'_').replace(/[^\w\-]/g,'');
-}
-function imageCandidates(style, color){
-  const code = String(style||'').toUpperCase();
-  const col  = sanitizeColor(color);
-  const arr = [];
-  if (col) arr.push(`images/${code}__${col}.jpg`,`images/${code}__${col}.png`,`images/${code}__${col}.jpeg`);
-  arr.push(`images/${code}.jpg`,`images/${code}.png`,`images/${code}.jpeg`);
-  return arr;
-}
-async function pickImage(style, color){
-  const urls = imageCandidates(style, color);
-  for (const u of urls){
-    try{ const r = await fetch(u,{method:'HEAD',cache:'no-store'}); if(r.ok) return u; }catch{}
-  }
-  return 'https://via.placeholder.com/300x300.png?text=SOLID';
-}
-
-/* 가격 표기 */
-function fmtWon(n){ if(n==null||isNaN(n)) return ""; return Number(n).toLocaleString()+"원"; }
-function priceHTML(rows){
-  if(!rows?.length) return '<span class="muted">가격 정보 없음</span>';
-  // 같은 품번/컬러 내에서 가격 동일 가정(첫 행 사용)
-  const r = rows[0];
-  const list = r.price_list ?? null;
-  const now  = r.price_now ?? null;
-  const sale = r.sale_rate ?? null;
-  const parts = [];
-  if(now!=null) parts.push(`<span class="priceNow">${fmtWon(now)}</span>`);
-  if(list!=null) parts.push(`<span class="priceList">${fmtWon(list)}</span>`);
-  if(sale!=null) parts.push(`<span class="priceSale">(-${sale}%)</span>`);
-  return parts.join(' ') || '<span class="muted">가격 정보 없음</span>';
-}
-
-/* 결과 렌더 */
-const $ = s=>document.querySelector(s);
-const listEl = $("#list");
-const helpEl = $("#help");
-
-function groupByStyle(rows){
-  const map = new Map();
-  for(const r of rows){
-    const key = r.code.toUpperCase();
-    if(!map.has(key)) map.set(key,{code:key, name:r.name||'', colors:new Map()});
-    const col = r.color||'';
-    if(!map.get(key).colors.has(col)) map.get(key).colors.set(col, []);
-    map.get(key).colors.get(col).push(r);
-  }
-  return Array.from(map.values());
-}
-
-function badgeClass(status){
-  if(status==="주문 가능") return "badge ok";
-  if(status==="주문 불가(미입고)") return "badge incoming";
-  if(status==="품절 임박") return "badge warn";
-  return "badge";
-}
-
-function renderRows(rows){
-  listEl.innerHTML = "";
-  if(!rows.length){ helpEl.textContent="검색 결과가 없습니다."; return; }
-  helpEl.textContent="";
-  const items = groupByStyle(rows);
-
-  for(const item of items){
-    const colors = Array.from(item.colors.keys());
-    const firstColor = colors[0]||"";
-    const colorSelId = `sel_${item.code}_${Math.random().toString(36).slice(2)}`;
-
-    const firstRows = item.colors.get(firstColor)||[];
-    const head = `
-      <div class="grid" style="margin:6px 0 8px 0">
-        <div style="display:flex;gap:10px;align-items:center">
-          <img id="${colorSelId}_img" class="thumb" alt="thumb" src="https://via.placeholder.com/300x300.png?text=SOLID" />
-          <div>
-            <div class="pill" style="font-weight:700;font-size:16px">${item.code}</div>
-            <div id="${colorSelId}_title" class="muted">${item.name||''}</div>
-            <div id="${colorSelId}_price" class="priceBox" style="margin-top:6px">${priceHTML(firstRows)}</div>
-          </div>
-        </div>
-        <div>
-          <div class="hint" style="margin-bottom:6px">색상 선택</div>
-          <select id="${colorSelId}" class="select">
-            ${colors.map(c=>`<option value="${c}">${c||'(색상없음)'}</option>`).join('')}
-          </select>
-        </div>
-      </div>
-    `;
-
-    const wrap = document.createElement('div');
-    wrap.className = "item";
-    wrap.innerHTML = head + `<div id="${colorSelId}_sizes"></div>`;
-    listEl.appendChild(wrap);
-
-    setTimeout(async ()=>{
-      // 이미지
-      const imgEl = document.getElementById(colorSelId+'_img');
-      imgEl.src = await pickImage(item.code, firstColor);
-
-      // 사이즈
-      const fillSizes = (color)=>{
-        const rows = item.colors.get(color)||[];
-        const host = document.getElementById(colorSelId+'_sizes');
-        host.innerHTML = `
-          <div class="hint" style="margin-bottom:6px">사이즈 선택</div>
-          <div class="sizes">
-            ${rows.map(r=>{
-              const disabled = (r.status==="주문 불가" || r.status==="주문 불가(미입고)") ? "disabled" : "";
-              return `<button class="sizeBtn" ${disabled} data-payload='${JSON.stringify(r).replace(/'/g,"&apos;")}'>
-                        ${r.size} <span class="status ${badgeClass(r.status)}">${r.status}</span>
-                      </button>`;
-            }).join('')}
-          </div>
-        `;
-        // 버튼 이벤트
-        host.querySelectorAll('.sizeBtn').forEach(btn=>{
-          btn.addEventListener('click', ()=>{
-            const r = JSON.parse(btn.getAttribute('data-payload').replace(/&apos;/g,"'"));
-            openOrder(r);
-          });
-        });
-        // 가격
-        document.getElementById(colorSelId+'_price').innerHTML = priceHTML(rows);
-      };
-
-      fillSizes(firstColor);
-      document.getElementById(colorSelId)?.addEventListener('change', async (e)=>{
-        const c = e.target.value;
-        imgEl.src = await pickImage(item.code, c);
-        fillSizes(c);
-      });
-    },0);
-  }
-}
-
-/* 검색 */
-function doSearch(){
-  const q = String($('#q').value||'').trim().toLowerCase();
-  if(!q){ helpEl.textContent="검색어를 입력해 주세요."; listEl.innerHTML=""; return; }
-  const filtered = dataRows.filter(r=> String(r.code||'').toLowerCase().includes(q) );
-  renderRows(filtered);
-}
-$('#btnSearch').addEventListener('click', doSearch);
-$('#q').addEventListener('keydown', (e)=>{ if(e.key==='Enter') doSearch(); });
-
-/* -------- 주문 플로우 -------- */
-let selItem = null; // {code,color,size,price_list,price_now,sale_rate}
-function openOrder(row){
-  selItem = row;
-  $('#selProduct').textContent = `${row.code} / ${row.color||''} / ${row.size}`;
-  // 가격/배송 안내
-  const list = row.price_list ?? null;
-  const now = row.price_now ?? null;
-  const sale = row.sale_rate ?? null;
-  $('#p_now').textContent  = (now!=null)? fmtWon(now): '';
-  $('#p_list').textContent = (list!=null)? fmtWon(list): '';
-  $('#p_sale').textContent = (sale!=null)? `(-${sale}%)`: '';
-  // 배송비 규칙
-  const method = $('#f_method').value;
-  updateShippingGuide(method, now);
-  // 모달
-  $('#orderBack').style.display='flex';
-}
-function closeOrder(){ $('#orderBack').style.display='none'; selItem=null; }
-
-function updateShippingGuide(method, nowPrice){
-  let msg = '';
-  const now = Number(nowPrice||0);
-  if (method==='bank'){
-    // 계좌이체: 40만 미만 자동 +3000
-    if (now>0 && now<400000){
-      msg = `계좌이체 선택 시 결제금액에 배송비 3,000원이 자동 포함됩니다. (총 ${fmtWon(now+3000)})`;
-    } else {
-      msg = `40만원 이상 무료배송입니다.`;
-    }
-  } else {
-    // 카드결제: 안내만
-    if (now>0 && now<400000){
-      msg = `카드결제는 40만원 미만 시 배송비 3,000원이 부과됩니다.`;
-    } else {
-      msg = `40만원 이상 무료배송입니다.`;
-    }
-  }
-  $('#shipGuide').textContent = msg;
-}
-$('#f_method').addEventListener('change', (e)=>{
-  if(!selItem) return;
-  updateShippingGuide(e.target.value, selItem.price_now);
-});
-
-function buildOrderMessage(){
-  const f = (id)=> (document.getElementById(id).value||'').trim();
-  const parts = [];
-  parts.push(`[주문 접수]`);
-  parts.push(`품번: ${selItem?.code||''}`);
-  parts.push(`색상/사이즈: ${selItem?.color||''} / ${selItem?.size||''}`);
-  if(selItem?.price_now!=null){
-    parts.push(`판매가: ${fmtWon(selItem.price_now)} (정가: ${selItem.price_list!=null?fmtWon(selItem.price_list):'-'}, 할인: ${selItem.sale_rate!=null?selItem.sale_rate+'%':'-'})`);
-  }
-  parts.push(`이름: ${f('f_name')}`);
-  parts.push(`연락처: ${f('f_phone')}`);
-  parts.push(`주소: (${f('f_zip')}) ${f('f_addr1')} ${f('f_addr2')}`);
-  const method = f('f_method')==='bank' ? '계좌이체' : '카드결제';
-  parts.push(`결제방식: ${method}`);
-  if (f('f_method')==='bank'){
-    parts.push(`입금자 성명: ${f('f_depositor')||'(미기재)'}`);
-  }
-  parts.push(`요청사항: ${f('f_note')||'(없음)'}`);
-  parts.push(`—`);
-  // 배송비 안내 라인
-  parts.push(document.getElementById('shipGuide').textContent || '');
-  return parts.join('\n');
-}
-
-function submitOrder(){
-  const msg = buildOrderMessage();
-  // 카카오 채널로 메모 전송(채팅 시작 페이지로 이동 + 메시지는 붙여넣기 안내)
-  const kakaoUrl = "https://center-pf.kakao.com/_EfjEj/chats";
-  // 새창 열고 사용자가 붙여넣도록 유도 (자동 전송은 정책상 제한)
-  window.open(kakaoUrl, "_blank", "noopener");
-  // 안내 모달
-  closeOrder();
-  openPending();
-}
-
-/* 주문 확인중 모달 */
-function openPending(){ $('#pendingBack').style.display='flex'; }
-function closePending(){ $('#pendingBack').style.display='none'; }
-function closeOrder(e){ if(e && e.target && e.target.id!=='orderBack') return; $('#orderBack').style.display='none'; }
-
-/* -----------------------------
-   데이터 로드
-   - 변환기로 만든 inventory.json 경로를 사용하세요.
-   - 예: /data/inventory.json
-------------------------------*/
-async function loadData(){
-  try{
-    // 예: 같은 리포의 data/inventory.json
-    const r = await fetch('data/inventory.json', {cache:'no-store'});
-    if(!r.ok) throw new Error('데이터 없음');
-    const arr = await r.json();
-    // 기대 스키마: code,name,color,size,status,price_list,price_now,sale_rate
-    dataRows = Array.isArray(arr)? arr : [];
-  }catch(e){
-    dataRows = [];
-  }
-}
-loadData();
+  // FAQ 토글
+  document.querySelectorAll('.faq-q').forEach(q=>{
+    q.addEventListener('click', ()=>{
+      const a = q.parentElement.querySelector('.faq-a');
+      a.style.display = (a.style.display==='block') ? 'none' : 'block';
+    });
+  });
 </script>
 </body>
 </html>
