@@ -73,7 +73,7 @@
 <div class="wrap">
   <div class="row" style="justify-content:flex-end;gap:8px;margin-bottom:6px">
     <a class="btn" href="tel:0221369886">매장 전화연결</a>
-    <a class="btn" href="https://center-pf.kakao.com/_EfjEj/chats" target="_blank" rel="noopener">카카오채널 연결</a>
+    <a class="btn" href="https://pf.kakao.com/_EfjEj/chat" target="_blank" rel="noopener">카카오채널 연결</a>
   </div>
 
   <h1>솔리드옴므 아울렛 재고 조회</h1>
@@ -94,7 +94,7 @@
     <a href="about.html">브랜드 소개</a>
     <a href="privacy.html">개인정보처리방침</a>
     <a href="tel:0221369886">매장 전화연결</a>
-    <a href="https://center-pf.kakao.com/_EfjEj/chats" target="_blank" rel="noopener">카카오채널 연결</a>
+    <a href="https://pf.kakao.com/_EfjEj/chat" target="_blank" rel="noopener">카카오채널 연결</a>
   </footer>
 </div>
 
@@ -170,13 +170,15 @@
       <textarea id="recvNote" class="txt" placeholder="배송 관련 메모"></textarea>
 
       <div class="copy" style="margin-top:8px">
-        <div><b>주문 미리보기</b> (카카오 채널로 전송됩니다)</div>
+        <div><b>주문 미리보기</b> (카카오 채널/기록용)</div>
         <pre id="orderPreview" style="white-space:pre-wrap;margin:6px 0 0 0"></pre>
       </div>
     </div>
 
     <div class="modalFooter">
       <button class="btn primary" onclick="sendOrder()">주문 보내기</button>
+      <!-- ★ A안 추가: 카카오로 공유(모바일이면 카톡 선택 가능) -->
+      <button class="btn" onclick="shareOrder()">카카오로 공유</button>
     </div>
   </div>
 </div>
@@ -207,7 +209,11 @@
 <script>
 /* ===== 상수 & 유틸 ===== */
 const INV_URL = `inventory.json?v=${Date.now()}`;
-const KAKAO_CHAT = 'https://center-pf.kakao.com/_EfjEj/chats';
+// ★ A안: 카카오 채널 사용자용 URL (센터URL 아님)
+const KAKAO_CHAT = 'https://pf.kakao.com/_EfjEj/chat';
+// ★ A안: 주문 자동기록(Google Apps Script 웹앱 URL) — 아래에 본인 URL 붙여넣기
+const GAS_URL = 'https://script.google.com/macros/s/여기에_본인_웹앱ID/exec';
+
 const FREE_SHIP_THRESHOLD = 400000; // 40만원
 const SHIP_FEE = 3000;              // 3천원
 
@@ -215,6 +221,10 @@ const $  = s => document.querySelector(s);
 const nz = v => (v==null ? '' : String(v).trim());
 function toInt(v, d=0){ try{ const s=String(v??'').replace(/[^\d-]/g,'').trim(); if(!s||s==='-')return d; return parseInt(s,10);}catch{return d;} }
 function fmtWon(v){ return (v==null||v==='') ? '-' : Number(v).toLocaleString()+'원'; }
+
+/* ===== ‘주문 확인중’ 모달 동작 보완 ===== */
+function openPending(){ $('#pendingBack').style.display='flex'; }
+function closePending(e){ if(e) e.stopPropagation(); $('#pendingBack').style.display='none'; }
 
 /* 상태 규칙(매장 우선) */
 function decideState(store, wh, total){
@@ -279,12 +289,7 @@ function priceHTML(rows){
   return `<div class="price">${a.join(' ')}</div>`;
 }
 
-/* ===== 결제별 총액 계산 =====
-   - 단가: 판매가(p)가 우선, 없으면 정가(q)
-   - 소계 = 단가 * 수량
-   - 계좌이체: 40만원 미만이면 배송비 3,000원 포함한 총액
-   - 카드결제: 총액은 소계(참고용), 배송비 3,000원 별도 안내만 표시
-*/
+/* ===== 결제별 총액 계산 ===== */
 function calcTotals(price, qty, pay){
   const unit = (price.p!=null ? price.p : price.q);
   const unitSafe = (unit==null ? 0 : unit);
@@ -487,7 +492,8 @@ ${payLine}
 }
 function updatePreview(){ $('#orderPreview').textContent = buildOrderText(); }
 
-function sendOrder(){
+/* ====== A안: 주문 보내기 → 기록 + 카카오 채널 열기(PC대비) ====== */
+async function sendOrder(){
   if (cur.pay==='계좌이체' && !$('#depositor').value.trim()){
     alert('입금자 성명을 입력해 주세요.');
     $('#depositor').focus(); return;
@@ -497,9 +503,68 @@ function sendOrder(){
   if (!$('#road').value.trim()){ alert('주소 검색 버튼으로 도로명 주소를 입력해 주세요.'); return; }
 
   const msg = buildOrderText();
-  window.open(KAKAO_CHAT + '?message=' + encodeURIComponent(msg), '_blank');
+
+  // 1) 구글 스프레드시트 기록(있으면 사용)
+  if (GAS_URL && GAS_URL.includes('https://')) {
+    const payload = {
+      style: cur.style,
+      color: cur.color,
+      size:  cur.size,
+      qty:   Math.max(1, parseInt($('#qty').value||'1',10)),
+      price_text: (msg.match(/가격:[\s\S]*?배송:/)?.[0] || '').replace(/배송:$/,'').trim(),
+      pay_method: $('#payMethod').value || '계좌이체',
+      name: $('#recvName').value.trim(),
+      phone: $('#recvPhone').value.trim(),
+      addr: [$('#zip').value?`(${$('#zip').value})`:'', $('#road').value, $('#addrDetail').value].filter(Boolean).join(' '),
+      note: $('#recvNote').value.trim()
+    };
+    try{
+      await fetch(GAS_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    }catch(e){ /* 기록 실패해도 진행 */ }
+  }
+
+  // 2) PC 등에서는 복사 후 채널만 열기
+  try{ await navigator.clipboard.writeText(msg); }catch{}
+  window.open(KAKAO_CHAT, '_blank');
+
   closeOrder();
-  $('#pendingBack').style.display='flex';
+  openPending();
+}
+
+/* ====== A안: 카카오로 공유 (모바일에서 카톡 공유 선택 가능) ====== */
+async function shareOrder(){
+  const msg = buildOrderText();
+
+  // 기록 먼저(선택)
+  if (GAS_URL && GAS_URL.includes('https://')) {
+    const payload = {
+      style: cur.style, color: cur.color, size: cur.size,
+      qty: Math.max(1, parseInt($('#qty').value||'1',10)),
+      price_text: (msg.match(/가격:[\s\S]*?배송:/)?.[0] || '').replace(/배송:$/,'').trim(),
+      pay_method: $('#payMethod').value || '계좌이체',
+      name: $('#recvName').value.trim(),
+      phone: $('#recvPhone').value.trim(),
+      addr: [$('#zip').value?`(${$('#zip').value})`:'', $('#road').value, $('#addrDetail').value].filter(Boolean).join(' '),
+      note: $('#recvNote').value.trim()
+    };
+    try{ await fetch(GAS_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) }); }catch{}
+  }
+
+  // 모바일 브라우저: 네이티브 공유(카톡 선택 가능)
+  if (navigator.share){
+    try{
+      await navigator.share({ text: msg });
+      closeOrder();
+      openPending();
+      return;
+    }catch(e){ /* 사용자가 공유 취소하면 아래로 폴백 */ }
+  }
+
+  // 폴백: 복사 후 채널만 열기
+  try{ await navigator.clipboard.writeText(msg); }catch{}
+  window.open(KAKAO_CHAT, '_blank');
+  closeOrder();
+  openPending();
 }
 
 /* ====== 검색 ====== */
