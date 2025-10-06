@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>솔리드옴므 아울렛 재고 조회</title>
-<link rel="manifest" href="manifest.webmanifest?v=6" />
+<link rel="manifest" href="manifest.webmanifest?v=8" />
 <style>
   :root { --bg:#0b0f14; --card:#121820; --muted:#94a3b8; --fg:#e8eef6; --accent:#5bbcff;
           --ok:#16a34a; --warn:#d97706; --bad:#ef4444; --incoming:#3b82f6; }
@@ -17,11 +17,13 @@
   .search{width:100%;padding:14px 16px;border-radius:14px;border:1px solid #273547;background:#0f1620;color:var(--fg);font-size:18px;}
   .card{background:linear-gradient(180deg,#121820,#0d1420);border:1px solid #1c2430;border-radius:16px;padding:18px;}
   .pill{border:1px solid #2a3950;background:#0f172a;color:#cfe8ff;border-radius:999px;padding:6px 10px;font-size:13px}
-  .state{display:inline-block;border-radius:16px;padding:6px 12px;font-size:14px;border:1px solid transparent}
-  .state.ok{background:#0f2b1b;border-color:#1f5c37;color:#b9f7d5; cursor:pointer}
-  .state.warn{background:#2c1e0a;border-color:#7a4d17;color:#ffe4b5; cursor:pointer}
-  .state.bad{background:#3a0f14;border-color:#7a1d22;color:#ffc9c9}
-  .state.incoming{background:#0f1a3a;border-color:#3d4aac;color:#d2d8ff}
+  .state{display:inline-block;border-radius:16px;padding:6px 12px;font-size:14px;border:1px solid transparent;
+         cursor:pointer; background:#0f172a; color:#cfe8ff}
+  .state.ok{background:#0f2b1b;border-color:#1f5c37;color:#b9f7d5}
+  .state.warn{background:#2c1e0a;border-color:#7a4d17;color:#ffe4b5}
+  .state.bad{background:#3a0f14;border-color:#7a1d22;color:#ffc9c9; cursor:default}
+  .state.incoming{background:#0f1a3a;border-color:#3d4aac;color:#d2d8ff; cursor:default}
+  .state:disabled{opacity:.6;cursor:not-allowed}
   .sizeCol{display:flex;flex-direction:column;gap:10px}
   .sizeItem{display:flex;align-items:center;gap:12px}
   .sizeTag{min-width:46px;text-align:center;border:1px solid #2a3950;border-radius:12px;padding:6px 10px;background:#0e1726;color:#cfe8ff}
@@ -33,7 +35,6 @@
   .price .rate{color:#9fe4b0}
   footer{margin:30px 0;color:#9aa7b8;font-size:14px;display:flex;gap:16px;flex-wrap:wrap;justify-content:flex-end}
   .hero{position:fixed;inset:0;z-index:-1;background:url('031.jpg') center/cover no-repeat;filter:brightness(.35)}
-  /* modal */
   .modalBack{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:9999}
   .modal{width:min(680px,92vw);background:#101622;border:1px solid #1e2a3a;border-radius:16px;padding:18px}
   .modal h3{margin:0 0 8px 0}
@@ -83,7 +84,7 @@
     <div id="orderInfo" class="muted" style="margin-bottom:10px"></div>
 
     <div class="note small" style="margin:8px 0 12px 0">
-      <div>• <b>택배비</b> : <b>40만원 이상 무료</b> / 그 이하 <b>3,000원</b> (제주/도서산간 추가비용)</div>
+      <div>• <b>택배비</b> : <b>40만원 이상 무료</b> / 그 이하 <b>3,000원</b></div>
       <div>• <b>교환/반품</b> : 수령 후 7일 이내, 택 제거/착용 흔적/오염 없을 때 가능 (왕복택배비 <b>7,000원</b>)</div>
       <div>• <b>유의</b> : 오프라인 재고 연동으로 결제 후 품절이 발생할 수 있어요. 이 경우 <b>전액 환불</b>됩니다.</div>
     </div>
@@ -171,15 +172,12 @@
 </div>
 
 <script>
-// ---------- 설정 ----------
 const INV_URL = `inventory.json?v=${Date.now()}`;
 const KAKAO_CHAT = 'https://center-pf.kakao.com/_EfjEj/chats';
-// --------------------------
 
 const $ = s => document.querySelector(s);
 const nz = v => (v==null ? '' : String(v).trim());
 
-// 새 스키마 → 구 스키마로 맞춤
 function normalizeRow(r){
   const out = {...r};
   if (out['매장재고']==null && out['매장합']!=null) out['매장재고']=out['매장합'];
@@ -311,6 +309,7 @@ function render(list){
   $('#result').innerHTML = blocks.join('');
 }
 
+// ★ 클릭 핸들러 직접 연결 버전
 function updateSizes(id, item, color){
   const box = document.getElementById(id+'_sizes');
   const rows = item.colors.get(color)||[];
@@ -322,11 +321,24 @@ function updateSizes(id, item, color){
   const html = rows.map(r=>{
     const size = nz(r['사이즈']) || '-';
     const st = decideState(r['매장재고'], r['창고재고'], r['전체재고']);
-    const clickable = (st.cls==='ok' || st.cls==='warn') ? ` onclick="openOrder('${item.code}','${color}','${size}', ${JSON.stringify(st.label)})" ` : '';
-    return `<div class="sizeItem"><span class="sizeTag">${size}</span>
-            <span class="state ${st.cls}" ${clickable}>${st.label}</span></div>`;
+    const clickable = (st.cls==='ok' || st.cls==='warn');
+    const baseAttr = `data-style="${item.code}" data-color="${color}" data-size="${size}"`;
+
+    return `<div class="sizeItem">
+              <span class="sizeTag">${size}</span>
+              <span class="state ${st.cls}" ${baseAttr}
+                    ${clickable ? 'onclick="handleStateClick(this)" role="button" tabindex="0"' : 'aria-disabled="true"'}>${st.label}</span>
+            </div>`;
   }).join('');
   box.innerHTML = html;
+}
+
+// 상태 뱃지 클릭 → 주문 모달
+function handleStateClick(el){
+  const style = el.getAttribute('data-style');
+  const color = el.getAttribute('data-color');
+  const size  = el.getAttribute('data-size');
+  openOrder(style,color,size);
 }
 
 // 검색
@@ -349,25 +361,13 @@ function openOrder(style,color,size){
   $('#orderInfo').textContent = `선택: ${style} ${color || ''} ${size || ''}`.trim();
   $('#bankBox').style.display='none';
   $('#cardBox').style.display='none';
-  // 카드 메모 미리 생성
   $('#memo').textContent = makeCardMemo();
-  // 계좌 메모 초기화
   updateBankMemo();
   $('#orderBack').style.display='flex';
 }
-function closeOrder(){
-  $('#orderBack').style.display='none';
-}
-function showBank(){
-  $('#cardBox').style.display='none';
-  $('#bankBox').style.display='block';
-  updateBankMemo();
-}
-function showCard(){
-  $('#bankBox').style.display='none';
-  $('#cardBox').style.display='block';
-  $('#memo').textContent = makeCardMemo();
-}
+function closeOrder(){ $('#orderBack').style.display='none'; }
+function showBank(){ $('#cardBox').style.display='none'; $('#bankBox').style.display='block'; updateBankMemo(); }
+function showCard(){ $('#bankBox').style.display='none'; $('#cardBox').style.display='block'; $('#memo').textContent = makeCardMemo(); }
 
 // --- 계좌이체 흐름 ---
 function copyBank(){
@@ -399,16 +399,9 @@ function makeBankMemo(){
 * 이체 후 확인 부탁드립니다.`
   );
 }
-function updateBankMemo(){
-  $('#bankMemo').textContent = makeBankMemo();
-}
-function copyBankMemo(){
-  navigator.clipboard.writeText($('#bankMemo').textContent).then(()=> alert('주문 메모를 복사했습니다.'));
-}
-function sendBankMemo(){
-  const t = $('#bankMemo').textContent;
-  window.open(KAKAO_CHAT + '?message=' + encodeURIComponent(t), '_blank');
-}
+function updateBankMemo(){ $('#bankMemo').textContent = makeBankMemo(); }
+function copyBankMemo(){ navigator.clipboard.writeText($('#bankMemo').textContent).then(()=> alert('주문 메모를 복사했습니다.')); }
+function sendBankMemo(){ const t = $('#bankMemo').textContent; window.open(KAKAO_CHAT + '?message=' + encodeURIComponent(t), '_blank'); }
 
 // --- 카드 결제 흐름 ---
 function makeCardMemo(){
@@ -428,23 +421,12 @@ function makeCardMemo(){
 * 재고 확인 후 결제 링크 부탁드립니다.`
   );
 }
-function copyMemo(){
-  const t = $('#memo').textContent;
-  navigator.clipboard.writeText(t).then(()=> alert('메모를 복사했습니다.'));
-}
-function sendMemo(){
-  const t = $('#memo').textContent;
-  window.open(KAKAO_CHAT + '?message=' + encodeURIComponent(t), '_blank');
-}
+function copyMemo(){ const t = $('#memo').textContent; navigator.clipboard.writeText(t).then(()=> alert('메모를 복사했습니다.')); }
+function sendMemo(){ const t = $('#memo').textContent; window.open(KAKAO_CHAT + '?message=' + encodeURIComponent(t), '_blank'); }
 
 // 공통 완료
-function showPending(){
-  closeOrder();
-  $('#pendingBack').style.display='flex';
-}
-function closePending(){
-  $('#pendingBack').style.display='none';
-}
+function showPending(){ closeOrder(); $('#pendingBack').style.display='flex'; }
+function closePending(){ $('#pendingBack').style.display='none'; }
 
 load().then(()=>{}).catch(()=>{});
 </script>
