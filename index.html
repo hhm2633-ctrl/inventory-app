@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>솔리드옴므 아울렛 재고 조회</title>
-<link rel="manifest" href="manifest.webmanifest?v=8" />
+<link rel="manifest" href="manifest.webmanifest?v=9" />
 <style>
   :root { --bg:#0b0f14; --card:#121820; --muted:#94a3b8; --fg:#e8eef6; --accent:#5bbcff;
           --ok:#16a34a; --warn:#d97706; --bad:#ef4444; --incoming:#3b82f6; }
@@ -27,7 +27,7 @@
   .sizeCol{display:flex;flex-direction:column;gap:10px}
   .sizeItem{display:flex;align-items:center;gap:12px}
   .sizeTag{min-width:46px;text-align:center;border:1px solid #2a3950;border-radius:12px;padding:6px 10px;background:#0e1726;color:#cfe8ff}
-  .grid{display:grid;grid-template-columns:1fr 210px 1fr auto;gap:12px;align-items:center}
+  .grid{display:grid;grid-template-columns:1fr 210px 1fr;gap:12px;align-items:center}
   .select{padding:10px 12px;border-radius:10px;border:1px solid #273547;background:#0e1622;color:var(--fg)}
   .price{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   .price .now{font-weight:800;font-size:18px}
@@ -36,15 +36,17 @@
   footer{margin:30px 0;color:#9aa7b8;font-size:14px;display:flex;gap:16px;flex-wrap:wrap;justify-content:flex-end}
   .hero{position:fixed;inset:0;z-index:-1;background:url('031.jpg') center/cover no-repeat;filter:brightness(.35)}
   .modalBack{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:9999}
-  .modal{width:min(680px,92vw);background:#101622;border:1px solid #1e2a3a;border-radius:16px;padding:18px}
+  .modal{width:min(720px,92vw);background:#101622;border:1px solid #1e2a3a;border-radius:16px;padding:18px}
   .modal h3{margin:0 0 8px 0}
   .muted{color:#a1a8b5}
   .copy{border:1px dashed #2e3c52;border-radius:10px;padding:10px 12px;background:#0f172a}
   .note{background:#0e1522;border:1px solid #203047;border-radius:12px;padding:12px}
   .small{font-size:13px;color:#9fb0c6}
-  input.txt, textarea.txt{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #2a3950;background:#0f172a;color:#e7f0ff}
+  input.txt, textarea.txt, select.sel{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #2a3950;background:#0f172a;color:#e7f0ff}
   textarea.txt{min-height:74px;resize:vertical}
   .label{font-size:13px;color:#9fb0c6;margin:8px 0 4px}
+  .formGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .right{display:flex;justify-content:flex-end;gap:8px}
 </style>
 </head>
 <body>
@@ -77,72 +79,61 @@
   </footer>
 </div>
 
-<!-- 주문 모달 -->
+<!-- 주문 모달 (사이즈별 즉시주문) -->
 <div id="orderBack" class="modalBack" onclick="closeOrder(event)">
   <div class="modal" onclick="event.stopPropagation()">
-    <h3>주문 방식 안내</h3>
-    <div id="orderInfo" class="muted" style="margin-bottom:10px"></div>
+    <h3>주문서 작성</h3>
+    <div id="orderSel" class="muted" style="margin-bottom:10px"></div>
 
     <div class="note small" style="margin:8px 0 12px 0">
       <div>• <b>택배비</b> : <b>40만원 이상 무료</b> / 그 이하 <b>3,000원</b></div>
-      <div>• <b>교환/반품</b> : 수령 후 7일 이내, 택 제거/착용 흔적/오염 없을 때 가능 (왕복택배비 <b>7,000원</b>)</div>
-      <div>• <b>유의</b> : 오프라인 재고 연동으로 결제 후 품절이 발생할 수 있어요. 이 경우 <b>전액 환불</b>됩니다.</div>
+      <div>• <b>교환/반품</b> : 수령 후 7일 이내 (택 제거/착용 흔적/오염 없을 때, 왕복 <b>7,000원</b>)</div>
+      <div>• 오프라인 재고 연동이라 결제 후 품절 시 <b>전액 환불</b>됩니다.</div>
     </div>
 
-    <div class="row" style="gap:10px;margin:8px 0 14px 0">
-      <button class="btn" onclick="showBank()">계좌이체로 주문</button>
-      <button class="btn" onclick="showCard()">카드결제로 주문</button>
-    </div>
-
-    <!-- 계좌이체 영역 -->
-    <div id="bankBox" style="display:none">
-      <div class="copy" style="margin-bottom:8px">
-        <div><b>입금 계좌</b></div>
-        <div id="bankText">국민 616 701 01 634455 솔리드(한홍명)</div>
+    <div class="formGrid" style="margin:6px 0 8px 0">
+      <div>
+        <div class="label">결제 방식</div>
+        <select id="payMethod" class="sel" onchange="toggleDepositor()">
+          <option value="계좌이체">계좌이체</option>
+          <option value="카드결제">카드결제</option>
+        </select>
       </div>
-
-      <div class="label">입금자 성명</div>
-      <input id="depositor" class="txt" placeholder="예: 홍길동" oninput="updateBankMemo()" />
-
-      <div class="label">수령자 이름</div>
-      <input id="recvName" class="txt" placeholder="예: 김솔리드" oninput="updateBankMemo()" />
-
-      <div class="label">연락처</div>
-      <input id="recvPhone" class="txt" placeholder="예: 010-1234-5678" oninput="updateBankMemo()" />
-
-      <div class="label">주소</div>
-      <textarea id="recvAddr" class="txt" placeholder="도로명주소 + 상세주소" oninput="updateBankMemo()"></textarea>
-
-      <div class="label">요청사항</div>
-      <textarea id="recvNote" class="txt" placeholder="배송 관련 메모" oninput="updateBankMemo()"></textarea>
-
-      <div class="copy" style="margin-top:10px">
-        <div><b>주문 메모</b> (카카오 채널에 붙여넣기)</div>
-        <pre id="bankMemo" style="white-space:pre-wrap;margin:6px 0 0 0"></pre>
-      </div>
-      <div class="row" style="gap:8px;margin-top:8px">
-        <button class="btn" onclick="copyBank()">계좌 복사</button>
-        <button class="btn" onclick="copyBankMemo()">메모 복사</button>
-        <button class="btn" onclick="sendBankMemo()">카카오채널로 전송</button>
-        <button class="btn" onclick="showPending()">이체완료</button>
+      <div>
+        <div class="label">수량</div>
+        <input id="qty" type="number" class="txt" min="1" step="1" value="1" />
       </div>
     </div>
 
-    <!-- 카드결제 영역 -->
-    <div id="cardBox" style="display:none">
-      <div class="copy" style="margin-bottom:8px">
-        <div><b>주문 메모</b> (카카오 채널에 붙여넣기)</div>
-        <pre id="memo" style="white-space:pre-wrap;margin:6px 0 0 0"></pre>
-      </div>
-      <div class="row" style="gap:8px;margin-top:4px">
-        <button class="btn" onclick="copyMemo()">메모 복사</button>
-        <button class="btn" onclick="sendMemo()">카카오채널로 전송</button>
-        <button class="btn" onclick="showPending()">결제완료</button>
-      </div>
-      <div class="muted small" style="margin-top:8px">* 상담원이 결제 링크를 안내해 드립니다.</div>
+    <div id="depositorBox">
+      <div class="label">입금자 성명 (계좌이체)</div>
+      <input id="depositor" class="txt" placeholder="예: 홍길동" />
     </div>
 
-    <div class="row" style="justify-content:flex-end;margin-top:14px">
+    <div class="formGrid">
+      <div>
+        <div class="label">수령자 이름</div>
+        <input id="recvName" class="txt" placeholder="예: 김솔리드" />
+      </div>
+      <div>
+        <div class="label">연락처</div>
+        <input id="recvPhone" class="txt" placeholder="예: 010-1234-5678" />
+      </div>
+    </div>
+
+    <div class="label">주소</div>
+    <textarea id="recvAddr" class="txt" placeholder="도로명주소 + 상세주소"></textarea>
+
+    <div class="label">요청사항</div>
+    <textarea id="recvNote" class="txt" placeholder="배송 관련 메모"></textarea>
+
+    <div class="copy" style="margin-top:10px">
+      <div><b>주문 미리보기</b> (카카오 채널로 전송됩니다)</div>
+      <pre id="orderPreview" style="white-space:pre-wrap;margin:6px 0 0 0"></pre>
+    </div>
+
+    <div class="right" style="margin-top:12px">
+      <button class="btn" onclick="sendOrder()">주문 보내기</button>
       <button class="btn" onclick="closeOrder()">닫기</button>
     </div>
   </div>
@@ -157,13 +148,11 @@
 영업시간 이후 21:00~ 다음날 매장 오픈 이후 순차적으로 연락드립니다.
 결제/이체 확인 후 순차적으로 연락드리겠습니다. 카카오 채널 알림을 확인해 주세요.
 
-택배비 안내 40만원 이상 구매시 무료배송 그이하 3,000 원 
+택배비 안내 40만원 이상 구매시 무료배송 / 그 이하 3,000원 
 단순 변심 교환 왕복 택배비 7,000원
 국민 616 701 01 634455 솔리드(한홍명)
 
-교환정책 
-
-제품 수령 후 교환은 1주일 이내로 가능 합니다.
+제품 수령 후 교환은 1주일 이내로 가능합니다.
     </div>
     <div class="row" style="justify-content:flex-end">
       <button class="btn" onclick="closePending()">확인</button>
@@ -175,8 +164,20 @@
 const INV_URL = `inventory.json?v=${Date.now()}`;
 const KAKAO_CHAT = 'https://center-pf.kakao.com/_EfjEj/chats';
 
-const $ = s => document.querySelector(s);
+const $  = s => document.querySelector(s);
 const nz = v => (v==null ? '' : String(v).trim());
+function toInt(v, d=0){ try{ const s=String(v??'').replace(/[^\d-]/g,'').trim(); if(!s||s==='-')return d; return parseInt(s,10);}catch{return d;} }
+function fmtWon(v){ return (v==null||v==='') ? '' : Number(v).toLocaleString()+'원'; }
+
+function decideState(store, wh, total){
+  store=+store||0; wh=+wh||0; total=+total||0;
+  if (store>=1 && wh>=1) return {label:'주문가능', cls:'ok', clickable:true};
+  if (store==0 && wh>=1) return {label:'주문불가(미입고)', cls:'incoming', clickable:false};
+  if (total<=9) return {label:'품절임박', cls:'warn', clickable:true};
+  if (store>=1) return {label:'주문가능', cls:'ok', clickable:true};
+  if (store==0 && wh==0) return {label:'주문불가', cls:'bad', clickable:false};
+  return {label:'주문가능', cls:'ok', clickable:true};
+}
 
 function normalizeRow(r){
   const out = {...r};
@@ -187,30 +188,11 @@ function normalizeRow(r){
   if (out['할인율']==null && out['할인율(%)']!=null) out['할인율']=out['할인율(%)'];
   return out;
 }
-function toInt(v, d=0){
-  try{
-    const s = String(v??'').replace(/[^\d-]/g,'').trim();
-    if (!s || s==='-') return d;
-    return parseInt(s,10);
-  }catch{ return d; }
-}
-function fmtWon(v){ return (v==null||v==='') ? '' : Number(v).toLocaleString()+'원'; }
 
-function decideState(store, wh, total){
-  store = +store||0; wh=+wh||0; total=+total||0;
-  if (store>=1 && wh>=1) return {label:'주문가능', cls:'ok'};
-  if (store==0 && wh>=1) return {label:'주문불가(미입고)', cls:'incoming'};
-  if (total<=9) return {label:'품절임박', cls:'warn'};
-  if (store>=1) return {label:'주문가능', cls:'ok'};
-  if (store==0 && wh==0) return {label:'주문불가', cls:'bad'};
-  return {label:'주문가능', cls:'ok'};
-}
-
-let INV = [];
+let INV=[];
 async function load(){
   const res = await fetch(INV_URL, {cache:'no-store'});
-  const data = await res.json();
-  INV = Array.isArray(data)? data.map(normalizeRow): [];
+  INV = (await res.json()).map(normalizeRow);
 }
 function groupByStyle(rows){
   const map = new Map();
@@ -220,48 +202,29 @@ function groupByStyle(rows){
     const size  = nz(r['사이즈']);
     if (!map.has(code)) map.set(code, {code, colors:new Map()});
     const entry = map.get(code);
-    if (entry){
-      if (!entry.colors.has(color)) entry.colors.set(color, []);
-      entry.colors.get(color).push(r);
-    }
+    if (!entry.colors.has(color)) entry.colors.set(color, []);
+    entry.colors.get(color).push(r);
   }
-  const orderRTW   = ['44','46','48','50','52','54'];
-  const orderPants = ['28','30','31','32','33','34','36'];
-  const orderShoes = ['39','40','41','42','43'];
-  const getIdx=(s)=>{
-    if (orderRTW.includes(s))   return orderRTW.indexOf(s);
-    if (orderPants.includes(s)) return orderPants.indexOf(s)+100;
-    if (orderShoes.includes(s)) return orderShoes.indexOf(s)+200;
-    return 999;
-  };
-  for (const [,v] of map){
-    for (const [c, arr] of v.colors){
-      arr.sort((a,b)=> getIdx(nz(a['사이즈'])) - getIdx(nz(b['사이즈'])));
-      v.colors.set(c, arr);
-    }
-  }
+  const orderRTW=['44','46','48','50','52','54'];
+  const orderP=['28','30','31','32','33','34','36'];
+  const orderS=['39','40','41','42','43'];
+  const idx=(s)=> orderRTW.includes(s)?orderRTW.indexOf(s):orderP.includes(s)?100+orderP.indexOf(s):orderS.includes(s)?200+orderS.indexOf(s):999;
+  for (const [,v] of map){ for (const [c,arr] of v.colors){ arr.sort((a,b)=>idx(nz(a['사이즈']))-idx(nz(b['사이즈']))); v.colors.set(c,arr);} }
   return map;
 }
-
 function computePrice(rows){
   const r0 = rows.find(r=> r['판매가']!=null || r['소비자가']!=null || r['할인율']!=null) || {};
   let p = toInt(r0['판매가'], null);
   let q = toInt(r0['소비자가'], null);
   let r = r0['할인율']!=null ? Number(r0['할인율']) : null;
-
-  if ((r==null || Number.isNaN(r)) && p!=null && q!=null && q>0){
-    r = Math.round((1 - p/q) * 1000)/10;
-  }
-  if ((q==null || q===0) && p!=null && r!=null){
-    q = Math.round(p / (1 - r/100));
-  }
-  return {p, q, r};
+  if ((r==null || Number.isNaN(r)) && p!=null && q!=null && q>0) r = Math.round((1 - p/q) * 1000)/10;
+  if ((q==null || q===0) && p!=null && r!=null) q = Math.round(p / (1 - r/100));
+  return {p,q,r};
 }
-
 function priceHTML(rows){
   const {p,q,r} = computePrice(rows);
   if (p==null && q==null) return `<div class="pill">가격 정보 없음</div>`;
-  const a = [];
+  const a=[];
   if (q!=null) a.push(`<span class="orig">${fmtWon(q)}</span>`);
   if (p!=null) a.push(`<span class="now">${fmtWon(p)}</span>`);
   if (r!=null) a.push(`<span class="rate">(-${r}%)</span>`);
@@ -270,16 +233,13 @@ function priceHTML(rows){
 
 function render(list){
   if (!list.length){ $('#result').innerHTML = `<div style="color:#9aa7b8">검색 결과가 없습니다.</div>`; return; }
-
   const g = groupByStyle(list);
-  const blocks = [];
-
+  const blocks=[];
   for (const [, item] of g){
     const colors = Array.from(item.colors.keys());
     const colorSelId = 'color_'+Math.random().toString(36).slice(2,8);
     const firstColor = colors[0] || '(색상없음)';
     const firstRows  = item.colors.get(firstColor) || [];
-
     const head = `
       <div class="grid" style="margin:6px 0 12px 0">
         <div><div class="pill" style="font-weight:700;font-size:18px">${item.code}</div></div>
@@ -289,12 +249,10 @@ function render(list){
           </select>
         </div>
         <div id="${colorSelId}_price">${priceHTML(firstRows)}</div>
-        <div><button class="btn" onclick="openOrder('${item.code}','${firstColor}','')">주문</button></div>
       </div>
       <div id="${colorSelId}_sizes" class="sizeCol"></div>
     `;
     blocks.push(`<div style="border-top:1px solid #1c2430;padding-top:12px;margin-top:12px">${head}</div>`);
-
     setTimeout(()=> {
       updateSizes(colorSelId, item, firstColor);
       const sel = document.getElementById(colorSelId);
@@ -305,44 +263,125 @@ function render(list){
       });
     }, 0);
   }
-
   $('#result').innerHTML = blocks.join('');
 }
 
-// ★ 클릭 핸들러 직접 연결 버전
 function updateSizes(id, item, color){
   const box = document.getElementById(id+'_sizes');
   const rows = item.colors.get(color)||[];
-
   if (!rows.length){
     box.innerHTML = `<div class="sizeItem"><span class="sizeTag">-</span><span class="state bad">주문불가</span></div>`;
     return;
   }
   const html = rows.map(r=>{
-    const size = nz(r['사이즈']) || '-';
+    const size = nz(r['사이즈'])||'-';
     const st = decideState(r['매장재고'], r['창고재고'], r['전체재고']);
-    const clickable = (st.cls==='ok' || st.cls==='warn');
-    const baseAttr = `data-style="${item.code}" data-color="${color}" data-size="${size}"`;
-
+    const attrs = `data-style="${item.code}" data-color="${color}" data-size="${size}" data-price='${JSON.stringify(computePrice(rows))}'`;
+    const clickable = st.clickable ? `onclick="openOrderDirect(this)" role="button" tabindex="0"` : 'aria-disabled="true"';
     return `<div class="sizeItem">
               <span class="sizeTag">${size}</span>
-              <span class="state ${st.cls}" ${baseAttr}
-                    ${clickable ? 'onclick="handleStateClick(this)" role="button" tabindex="0"' : 'aria-disabled="true"'}>${st.label}</span>
+              <span class="state ${st.cls}" ${attrs} ${clickable}>${st.label}</span>
             </div>`;
   }).join('');
   box.innerHTML = html;
 }
 
-// 상태 뱃지 클릭 → 주문 모달
-function handleStateClick(el){
-  const style = el.getAttribute('data-style');
-  const color = el.getAttribute('data-color');
-  const size  = el.getAttribute('data-size');
-  openOrder(style,color,size);
+// ===== 즉시 주문 흐름 =====
+let cur = {style:'', color:'', size:'', price:{p:null,q:null,r:null}};
+function openOrderDirect(el){
+  cur.style = el.getAttribute('data-style');
+  cur.color = el.getAttribute('data-color');
+  cur.size  = el.getAttribute('data-size');
+  try { cur.price = JSON.parse(el.getAttribute('data-price')||'{}'); } catch { cur.price={}; }
+  const {p,q,r} = cur.price||{};
+  const priceLine = [
+    q!=null?`정가 ${fmtWon(q)}`:'', 
+    p!=null?`판매가 ${fmtWon(p)}`:'', 
+    (r!=null && !isNaN(r))?`할인율 ${r}%`:''
+  ].filter(Boolean).join(' · ') || '가격 정보 없음';
+
+  $('#orderSel').textContent = `선택: ${cur.style} ${cur.color || ''} ${cur.size || ''}  |  ${priceLine}`;
+  $('#qty').value = 1;
+  $('#payMethod').value = '계좌이체';
+  $('#depositor').value = '';
+  $('#recvName').value = '';
+  $('#recvPhone').value = '';
+  $('#recvAddr').value = '';
+  $('#recvNote').value = '';
+  toggleDepositor();
+  updatePreview();
+  $('#orderBack').style.display='flex';
+}
+function closeOrder(){ $('#orderBack').style.display='none'; }
+function toggleDepositor(){
+  const need = $('#payMethod').value === '계좌이체';
+  $('#depositorBox').style.display = need ? 'block' : 'none';
+  updatePreview();
+}
+['qty','depositor','recvName','recvPhone','recvAddr','recvNote','payMethod'].forEach(id=>{
+  document.addEventListener('input', (e)=>{ if (e.target && e.target.id===id) updatePreview(); });
+  document.addEventListener('change', (e)=>{ if (e.target && e.target.id===id) updatePreview(); });
+});
+
+function buildOrderText(){
+  const qty  = Math.max(1, parseInt($('#qty').value||'1',10));
+  const pay  = $('#payMethod').value;
+  const dep  = $('#depositor').value.trim();
+  const name = $('#recvName').value.trim();
+  const phone= $('#recvPhone').value.trim();
+  const addr = $('#recvAddr').value.trim();
+  const note = $('#recvNote').value.trim();
+  const {p,q,r} = cur.price||{};
+  const priceLine = [
+    q!=null?`정가 ${fmtWon(q)}`:'', 
+    p!=null?`판매가 ${fmtWon(p)}`:'', 
+    (r!=null && !isNaN(r))?`할인율 ${r}%`:''
+  ].filter(Boolean).join(' / ') || '가격 정보 없음';
+
+  return (
+`[온라인 주문 요청]
+상품코드: ${cur.style}
+색상/사이즈: ${cur.color || '-'} / ${cur.size || '-'}
+수량: ${qty}
+가격: ${priceLine}
+
+결제방식: ${pay}${pay==='계좌이체' ? ` (입금자: ${dep || '(입력)'}, 계좌: 국민 616 701 01 634455 솔리드(한홍명))` : ''}
+
+[수령자 정보]
+이름: ${name}
+연락처: ${phone}
+주소: ${addr}
+요청사항: ${note}
+
+• 택배비: 40만원 이상 무료 / 그 이하 3,000원
+• 교환: 수령 7일 내, 왕복 7,000원
+* 재고 확인 후 안내 드리겠습니다.`
+  );
+}
+function updatePreview(){ $('#orderPreview').textContent = buildOrderText(); }
+
+function sendOrder(){
+  // 간단 유효성
+  const pay = $('#payMethod').value;
+  if (pay==='계좌이체' && !$('#depositor').value.trim()){
+    alert('입금자 성명을 입력해 주세요.');
+    $('#depositor').focus(); return;
+  }
+  if (!$('#recvName').value.trim()){ alert('수령자 이름을 입력해 주세요.'); $('#recvName').focus(); return; }
+  if (!$('#recvPhone').value.trim()){ alert('연락처를 입력해 주세요.'); $('#recvPhone').focus(); return; }
+  if (!$('#recvAddr').value.trim()){ alert('주소를 입력해 주세요.'); $('#recvAddr').focus(); return; }
+
+  const msg = buildOrderText();
+  // 카카오 채널로 메모 전송 (새 창)
+  window.open(KAKAO_CHAT + '?message=' + encodeURIComponent(msg), '_blank');
+
+  // “주문 확인중” 모달 표시
+  closeOrder();
+  $('#pendingBack').style.display='flex';
 }
 
-// 검색
-async function search(){
+// ====== 검색 ======
+function search(){
   const q = nz($('#q').value).toLowerCase();
   const rows = INV.filter(r=>{
     const code = nz(r['상품코드']).toLowerCase();
@@ -354,81 +393,8 @@ async function search(){
 $('#srchBtn').addEventListener('click', search);
 $('#q').addEventListener('keydown', (e)=>{ if (e.key==='Enter') search(); });
 
-// ----- 주문 모달 -----
-let selStyle='', selColor='', selSize='';
-function openOrder(style,color,size){
-  selStyle=style; selColor=color; selSize=size;
-  $('#orderInfo').textContent = `선택: ${style} ${color || ''} ${size || ''}`.trim();
-  $('#bankBox').style.display='none';
-  $('#cardBox').style.display='none';
-  $('#memo').textContent = makeCardMemo();
-  updateBankMemo();
-  $('#orderBack').style.display='flex';
-}
-function closeOrder(){ $('#orderBack').style.display='none'; }
-function showBank(){ $('#cardBox').style.display='none'; $('#bankBox').style.display='block'; updateBankMemo(); }
-function showCard(){ $('#bankBox').style.display='none'; $('#cardBox').style.display='block'; $('#memo').textContent = makeCardMemo(); }
-
-// --- 계좌이체 흐름 ---
-function copyBank(){
-  const t = $('#bankText').textContent;
-  navigator.clipboard.writeText(t).then(()=> alert('계좌를 복사했습니다.'));
-}
-function makeBankMemo(){
-  const dep = nz($('#depositor').value);
-  const name = nz($('#recvName').value);
-  const phone = nz($('#recvPhone').value);
-  const addr = nz($('#recvAddr').value);
-  const note = nz($('#recvNote').value);
-
-  return (
-`[계좌이체 주문 요청]
-상품코드: ${selStyle}
-색상: ${selColor || '(선택)'}
-사이즈: ${selSize || '(선택)'}
-
-입금자 성명: ${dep || '(입력)'}
-입금 계좌: 국민 616 701 01 634455 솔리드(한홍명)
-
-[받는분 정보]
-이름: ${name}
-연락처: ${phone}
-주소: ${addr}
-요청사항: ${note}
-
-* 이체 후 확인 부탁드립니다.`
-  );
-}
-function updateBankMemo(){ $('#bankMemo').textContent = makeBankMemo(); }
-function copyBankMemo(){ navigator.clipboard.writeText($('#bankMemo').textContent).then(()=> alert('주문 메모를 복사했습니다.')); }
-function sendBankMemo(){ const t = $('#bankMemo').textContent; window.open(KAKAO_CHAT + '?message=' + encodeURIComponent(t), '_blank'); }
-
-// --- 카드 결제 흐름 ---
-function makeCardMemo(){
-  return (
-`[카드결제 주문 요청]
-상품코드: ${selStyle}
-색상: ${selColor || '(선택)'}
-사이즈: ${selSize || '(선택)'}
-수령방법: 택배(착불/선불 중 선택)
-
-[받는분 정보]
-이름:
-연락처:
-주소:
-요청사항:
-
-* 재고 확인 후 결제 링크 부탁드립니다.`
-  );
-}
-function copyMemo(){ const t = $('#memo').textContent; navigator.clipboard.writeText(t).then(()=> alert('메모를 복사했습니다.')); }
-function sendMemo(){ const t = $('#memo').textContent; window.open(KAKAO_CHAT + '?message=' + encodeURIComponent(t), '_blank'); }
-
-// 공통 완료
-function showPending(){ closeOrder(); $('#pendingBack').style.display='flex'; }
-function closePending(){ $('#pendingBack').style.display='none'; }
-
-load().then(()=>{}).catch(()=>{});
+// 초기 로드
+load().catch(()=>{});
 </script>
 </body>
 </html>
