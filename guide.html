@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>주문·배송·교환 안내 | SOLID HOMME 가산점</title>
+<style>
+  :root { --bg:#0b0f14; --card:#121820; --muted:#8ea1b5; --fg:#e8eef6; --accent:#5bbcff; }
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans KR",sans-serif;}
+  header{padding:16px 20px;border-bottom:1px solid #1c2430;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  header h1{margin:0;font-size:18px}
+  .pill{background:#0f1620;border:1px solid #233042;padding:6px 10px;border-radius:100px;color:var(--muted)}
+  .container{max-width:980px;margin:0 auto;padding:16px}
+  .card{background:var(--card);border:1px solid #1c2430;border-radius:14px;padding:16px;margin-bottom:14px}
+  h2{margin:0 0 10px 0;font-size:16px}
+  h3{margin:16px 0 8px 0;font-size:15px}
+  .muted{color:var(--muted)}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .faq-item{border-top:1px solid #1c2430}
+  .faq-q{cursor:pointer;padding:12px 0;display:flex;justify-content:space-between;gap:10px}
+  .faq-a{display:none;padding:0 0 12px 0;color:#d8e6ff}
+  .badge{display:inline-block;padding:3px 8px;border-radius:999px;border:1px solid #2b394d;background:#0f1620;color:#d0e7ff;font-size:12px}
+  footer{padding:20px;color:var(--muted);border-top:1px solid #1c2430;text-align:center}
+</style>
+</head>
+<body>
+  <header>
+    <h1>주문·배송·교환 안내</h1>
+    <span class="pill">SOLID HOMME 가산점 고객센터 10:30–21:00</span>
+  </header>
+
+  <div class="container">
+    <!-- 주문 안내 -->
+    <div class="card">
+      <h2>주문 방법</h2>
+      <div class="muted" style="margin-bottom:8px">상품 페이지에서 <b>사이즈별 “주문하기”</b>를 누르면 간단한 주문양식을 작성하실 수 있어요.</div>
+      <ul>
+        <li><b>결제 방식</b>: 계좌이체 / 카드결제</li>
+        <li><b>카카오 채널</b>: 주문 정보는 매장 카카오 채널로 접수되어 빠르게 확인·안내드립니다.</li>
+        <li><b>영업시간</b>: 10:30–21:00 (이후 접수 건은 다음 영업일 순차 연락)</li>
+        <li><b>문의</b>: <a href="tel:0221369886">02-2136-9886</a> · <a href="https://center-pf.kakao.com/_EfjEj/chats" target="_blank" rel="noopener">카카오 채널 열기</a></li>
+      </ul>
+    </div>
+
+    <!-- 결제/배송 -->
+    <div class="card">
+      <h2>결제 · 배송</h2>
+      <ul>
+        <li><b>배송비</b>: <b>40만원 이상 무료</b> / <b>40만원 미만 3,000원</b></li>
+        <li><b>계좌이체</b>: 3,000원 배송비가 결제 금액에 <b>자동 포함</b>됩니다.</li>
+        <li><b>카드결제</b>: 결제 단계에서 <b>배송비 안내</b>가 제공되며 40만원 미만 시 부과됩니다.</li>
+        <li><b>입금계좌</b>: 국민은행 <b>616-701-01-634455</b>  예금주 <b>솔리드(한홍명)</b></li>
+        <li><b>발송</b>: 결제 확인 후 영업일 기준 <b>당일~1일 내</b> 출고(택배 상황에 따라 변동)</li>
+      </ul>
+    </div>
+
+    <!-- 교환/반품 정책 -->
+    <div class="card">
+      <h2>교환 · 반품 정책 (요약)</h2>
+      <ul>
+        <li><b>교환 가능 기한</b>: 제품 수령 후 <b>7일 이내</b> (전자상거래법)</li>
+        <li><b>단순 변심 교환</b>: 왕복 택배비 <b>7,000원</b> 고객 부담</li>
+        <li><b>불량/오배송</b>: 택배비 전액 매장 부담, 동일 상품/사이즈 우선 교환</li>
+        <li><b>교환 불가</b>: 사용 흔적/세탁/오염/택 분리/구성품 분실/맞교환 요청/기간 경과 등</li>
+        <li><b>절차</b>: 카카오 채널로 주문번호·성함·연락처와 사유를 남겨 주세요. 신속히 안내드립니다.</li>
+      </ul>
+    </div>
+
+    <!-- FAQ -->
+    <div class="card">
+      <h2>자주 묻는 질문(FAQ)</h2>
+
+      <div class="faq-item">
+        <div class="faq-q"><span>재고 상태 기준은 어떻게 되나요?</span><span class="badge">재고</span></div>
+        <div class="faq-a">
+          <p>• <b>주문 가능</b>: 매장(한 곳이라도)에 재고가 있는 경우 (물류만 재고는 주문불가)<br>
+             • <b>주문 불가(미입고)</b>: 매장 재고 0이지만 물류 창고에만 재고가 있는 경우<br>
+             • <b>품절 임박</b>: 전체 재고 합이 9 이하인 경우</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q"><span>주소 입력은 어떻게 하나요?</span><span class="badge">주문</span></div>
+        <div class="faq-a">
+          <p>주문 양식에서 <b>우편번호 찾기</b>로 도로명 주소 검색 후 상세주소까지 입력해 주세요. 인스타 인앱 브라우저에서 팝업이 안 뜨면 우측 상단 메뉴에서 <b>기본 브라우저로 열기</b>를 눌러 주세요.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q"><span>부분 반품/교환도 가능한가요?</span><span class="badge">교환/반품</span></div>
+        <div class="faq-a">
+          <p>세트/구성 상품이 아닌 경우 부분 교환·반품 가능합니다. 택/구성품이 훼손되면 불가합니다.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q"><span>영업시간 이후 결제했는데, 언제 연락 오나요?</span><span class="badge">상담</span></div>
+        <div class="faq-a">
+          <p>영업시간(10:30–21:00) 이후 건은 다음 영업일 <b>오픈 이후 순차 안내</b>드립니다.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 연락/고객센터 -->
+    <div class="card">
+      <h2>고객센터 · 문의</h2>
+      <p><b>전화</b> <a href="tel:0221369886">02-2136-9886</a> &nbsp;|&nbsp; <b>카카오 채널</b> <a href="https://center-pf.kakao.com/_EfjEj/chats" target="_blank" rel="noopener">채팅 열기</a></p>
+      <p class="muted">주문서 접수 후 “주문 확인중” 알림이 발송됩니다. 결제/이체 확인 뒤 최종 확정 안내를 드립니다.</p>
+    </div>
+  </div>
+
+  <footer>
+    <div style="margin-bottom:6px">
+      <a href="index.html">재고 조회</a> ·
+      <a href="about.html">브랜드 소개</a> ·
+      <a href="guide.html">주문·배송·교환 안내</a> ·
+      <a href="privacy.html">Privacy Policy</a>
+    </div>
+    <div class="muted">© SOLID HOMME 가산점</div>
+  </footer>
+
+<script>
+  // FAQ 토글
+  document.querySelectorAll('.faq-q').forEach(q=>{
+    q.addEventListener('click', ()=>{
+      const a = q.parentElement.querySelector('.faq-a');
+      a.style.display = (a.style.display==='block') ? 'none' : 'block';
+    });
+  });
+</script>
+</body>
+</html>
