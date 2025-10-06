@@ -4,76 +4,85 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>솔리드옴므 아울렛 재고 조회</title>
-<link rel="manifest" href="manifest.webmanifest?v=10" />
+<link rel="manifest" href="manifest.webmanifest?v=11" />
+<!-- 다음(카카오) 주소검색: 무료, 웹 전용 -->
+<script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 <style>
   :root { --bg:#0b0f14; --card:#121820; --muted:#94a3b8; --fg:#e8eef6; --accent:#5bbcff;
           --ok:#16a34a; --warn:#d97706; --bad:#ef4444; --incoming:#3b82f6; }
   html,body{margin:0;padding:0;background:#0b0f14;color:var(--fg);
-            font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans KR",sans-serif;}
-  .wrap{max-width:1100px;margin:28px auto;padding:0 16px;}
-  h1{margin:0 0 20px 0;font-size:28px;}
+            font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans KR",sans-serif;}
+  .wrap{max-width:1100px;margin:24px auto;padding:0 14px;}
+  h1{margin:0 0 16px 0;font-size:24px;}
   .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  .btn{background:#111827;border:1px solid #273547;color:#d9e7ff;padding:10px 14px;border-radius:12px;cursor:pointer}
-  .btn.big{padding:12px 16px;font-weight:700}
+  .btn{background:#111827;border:1px solid #273547;color:#d9e7ff;padding:9px 12px;border-radius:12px;cursor:pointer}
+  .btn.big{padding:10px 14px;font-weight:700}
   .btn.primary{background:#0f172a;border-color:#2b3a52}
   .btn.green{background:#0f2b1b;border-color:#1f5c37}
   .btn.blue{background:#0f1a3a;border-color:#3d4aac}
   .btn.ghost{background:transparent;border-color:#2b3a52}
-  .search{width:100%;padding:14px 16px;border-radius:14px;border:1px solid #273547;background:#0f1620;color:var(--fg);font-size:18px;}
-  .card{background:linear-gradient(180deg,#121820,#0d1420);border:1px solid #1c2430;border-radius:16px;padding:18px;}
-  .pill{border:1px solid #2a3950;background:#0f172a;color:#cfe8ff;border-radius:999px;padding:6px 10px;font-size:13px}
-  .state{display:inline-block;border-radius:16px;padding:6px 12px;font-size:14px;border:1px solid transparent;
+  .search{width:100%;padding:12px 14px;border-radius:14px;border:1px solid #273547;background:#0f1620;color:var(--fg);font-size:16px;}
+  .card{background:linear-gradient(180deg,#121820,#0d1420);border:1px solid #1c2430;border-radius:16px;padding:16px;}
+  .pill{border:1px solid #2a3950;background:#0f172a;color:#cfe8ff;border-radius:999px;padding:5px 9px;font-size:12px}
+  .state{display:inline-block;border-radius:16px;padding:6px 12px;font-size:13px;border:1px solid transparent;
          cursor:pointer; background:#0f172a; color:#cfe8ff}
   .state.ok{background:#0f2b1b;border-color:#1f5c37;color:#b9f7d5}
   .state.warn{background:#2c1e0a;border-color:#7a4d17;color:#ffe4b5}
   .state.bad{background:#3a0f14;border-color:#7a1d22;color:#ffc9c9; cursor:default}
   .state.incoming{background:#0f1a3a;border-color:#3d4aac;color:#d2d8ff; cursor:default}
   .state:disabled{opacity:.6;cursor:not-allowed}
-  .sizeCol{display:flex;flex-direction:column;gap:10px}
-  .sizeItem{display:flex;align-items:center;gap:12px}
-  .sizeTag{min-width:46px;text-align:center;border:1px solid #2a3950;border-radius:12px;padding:6px 10px;background:#0e1726;color:#cfe8ff}
-  .grid{display:grid;grid-template-columns:1fr 210px 1fr;gap:12px;align-items:center}
-  .select{padding:10px 12px;border-radius:10px;border:1px solid #273547;background:#0e1622;color:var(--fg)}
-  .price{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  .price .now{font-weight:800;font-size:18px}
+  .sizeCol{display:flex;flex-direction:column;gap:8px}
+  .sizeItem{display:flex;align-items:center;gap:10px}
+  .sizeTag{min-width:44px;text-align:center;border:1px solid #2a3950;border-radius:10px;padding:6px 8px;background:#0e1726;color:#cfe8ff;font-size:13px}
+  .grid{display:grid;grid-template-columns:1fr 210px 1fr;gap:10px;align-items:center}
+  .select{padding:9px 12px;border-radius:10px;border:1px solid #273547;background:#0e1622;color:var(--fg)}
+  .price{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .price .now{font-weight:800;font-size:17px}
   .price .orig{color:#a8b5c6;text-decoration:line-through}
   .price .rate{color:#9fe4b0}
-  footer{margin:30px 0;color:#9aa7b8;font-size:14px;display:flex;gap:16px;flex-wrap:wrap;justify-content:flex-end}
+  footer{margin:24px 0;color:#9aa7b8;font-size:13px;display:flex;gap:14px;flex-wrap:wrap;justify-content:flex-end}
   .hero{position:fixed;inset:0;z-index:-1;background:url('031.jpg') center/cover no-repeat;filter:brightness(.35)}
-  .modalBack{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:9999}
-  .modal{width:min(720px,92vw);background:#101622;border:1px solid #1e2a3a;border-radius:16px;padding:18px}
-  .modal h3{margin:0 0 8px 0}
+  /* ===== 모달: 작게 + 스크롤 ===== */
+  .modalBack{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:9999;padding:10px}
+  .modal{width:min(560px,94vw);max-height:88vh;display:flex;flex-direction:column;
+         background:#101622;border:1px solid #1e2a3a;border-radius:16px;}
+  .modalHeader{padding:14px 16px;border-bottom:1px solid #1c2430;display:flex;align-items:center;justify-content:space-between}
+  .modalBody{padding:14px 16px;overflow:auto}
+  .modalFooter{padding:12px 16px;border-top:1px solid #1c2430;display:flex;justify-content:flex-end;gap:8px}
   .muted{color:#a1a8b5}
-  .copy{border:1px dashed #2e3c52;border-radius:10px;padding:10px 12px;background:#0f172a}
-  .note{background:#0e1522;border:1px solid #203047;border-radius:12px;padding:12px}
-  .small{font-size:13px;color:#9fb0c6}
-  input.txt, textarea.txt, select.sel{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #2a3950;background:#0f172a;color:#e7f0ff}
-  textarea.txt{min-height:74px;resize:vertical}
-  .label{font-size:13px;color:#9fb0c6;margin:8px 0 4px}
-  .formGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .copy{border:1px dashed #2e3c52;border-radius:10px;padding:8px 10px;background:#0f172a}
+  .note{background:#0e1522;border:1px solid #203047;border-radius:12px;padding:10px}
+  .small{font-size:12px;color:#9fb0c6}
+  input.txt, textarea.txt, select.sel{width:100%;padding:9px 11px;border-radius:10px;border:1px solid #2a3950;background:#0f172a;color:#e7f0ff;font-size:14px}
+  textarea.txt{min-height:64px;resize:vertical}
+  .label{font-size:12px;color:#9fb0c6;margin:6px 0 4px}
+  .formGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .right{display:flex;justify-content:flex-end;gap:8px}
-  .buttonRow{display:flex;gap:10px;flex-wrap:wrap}
+  .buttonRow{display:flex;gap:8px;flex-wrap:wrap}
+  @media (max-width:520px){
+    .grid{grid-template-columns:1fr;gap:8px}
+  }
 </style>
 </head>
 <body>
 <div class="hero"></div>
 <div class="wrap">
-  <div class="row" style="justify-content:flex-end;gap:10px;margin-bottom:6px">
+  <div class="row" style="justify-content:flex-end;gap:8px;margin-bottom:6px">
     <a class="btn" href="tel:0221369886">매장 전화연결</a>
     <a class="btn" href="https://center-pf.kakao.com/_EfjEj/chats" target="_blank" rel="noopener">카카오채널 연결</a>
   </div>
 
   <h1>솔리드옴므 아울렛 재고 조회</h1>
 
-  <div class="card" style="margin-bottom:16px">
-    <div class="row" style="gap:10px">
+  <div class="card" style="margin-bottom:12px">
+    <div class="row" style="gap:8px">
       <input id="q" class="search" placeholder="예: s243ts26, 로고 티셔츠…" />
       <button class="btn" id="srchBtn">검색</button>
     </div>
   </div>
 
   <div class="card">
-    <h3 style="margin:0 0 12px 0">재고 결과</h3>
+    <h3 style="margin:0 0 10px 0">재고 결과</h3>
     <div id="result"></div>
   </div>
 
@@ -85,65 +94,75 @@
   </footer>
 </div>
 
-<!-- 주문 모달 (사이즈별 즉시주문) -->
+<!-- ===== 주문 모달 (작게 + 스크롤) ===== -->
 <div id="orderBack" class="modalBack" onclick="closeOrder(event)">
   <div class="modal" onclick="event.stopPropagation()">
-    <h3>주문서 작성</h3>
-    <div id="orderSel" class="muted" style="margin-bottom:10px"></div>
-
-    <div class="note small" style="margin:8px 0 12px 0">
-      <div>• <b>택배비</b> : <b>40만원 이상 무료</b> / 그 이하 <b>3,000원</b></div>
-      <div>• <b>교환/반품</b> : 수령 후 7일 이내 (택 제거/착용 흔적/오염 없을 때, 왕복 <b>7,000원</b>)</div>
-      <div>• 오프라인 재고 연동이라 결제 후 품절 시 <b>전액 환불</b>됩니다.</div>
-    </div>
-
-    <!-- 결제 방식: 두 개 버튼 -->
-    <div class="buttonRow" style="margin-bottom:6px">
-      <button class="btn big green" onclick="choosePay('계좌이체')">계좌이체로 주문</button>
-      <button class="btn big blue" onclick="choosePay('카드결제')">카드결제로 주문</button>
-    </div>
-
-    <div class="formGrid" style="margin:6px 0 8px 0">
-      <div>
-        <div class="label">선택된 결제 방식</div>
-        <input id="payMethod" class="txt" value="계좌이체" readonly />
-      </div>
-      <div>
-        <div class="label">수량</div>
-        <input id="qty" type="number" class="txt" min="1" step="1" value="1" />
-      </div>
-    </div>
-
-    <div id="depositorBox">
-      <div class="label">입금자 성명 (계좌이체)</div>
-      <input id="depositor" class="txt" placeholder="예: 홍길동" />
-    </div>
-
-    <div class="formGrid">
-      <div>
-        <div class="label">수령자 이름</div>
-        <input id="recvName" class="txt" placeholder="예: 김솔리드" />
-      </div>
-      <div>
-        <div class="label">연락처</div>
-        <input id="recvPhone" class="txt" placeholder="예: 010-1234-5678" />
-      </div>
-    </div>
-
-    <div class="label">주소</div>
-    <textarea id="recvAddr" class="txt" placeholder="도로명주소 + 상세주소"></textarea>
-
-    <div class="label">요청사항</div>
-    <textarea id="recvNote" class="txt" placeholder="배송 관련 메모"></textarea>
-
-    <div class="copy" style="margin-top:10px">
-      <div><b>주문 미리보기</b> (카카오 채널로 전송됩니다)</div>
-      <pre id="orderPreview" style="white-space:pre-wrap;margin:6px 0 0 0"></pre>
-    </div>
-
-    <div class="right" style="margin-top:12px">
-      <button class="btn primary" onclick="sendOrder()">주문 보내기</button>
+    <div class="modalHeader">
+      <h3 style="margin:0;font-size:18px">주문서 작성</h3>
       <button class="btn ghost" onclick="closeOrder()">닫기</button>
+    </div>
+
+    <div class="modalBody">
+      <div id="orderSel" class="muted" style="margin-bottom:8px"></div>
+
+      <div class="note small" style="margin:6px 0 10px 0">
+        <div>• <b>택배비</b> : <b>40만원 이상 무료</b> / 그 이하 <b>3,000원</b></div>
+        <div>• <b>교환/반품</b> : 수령 후 7일 이내 (택 제거/착용 흔적/오염 없을 때, 왕복 <b>7,000원</b>)</div>
+        <div>• 오프라인 재고 연동이라 결제 후 품절 시 <b>전액 환불</b>됩니다.</div>
+      </div>
+
+      <div class="buttonRow" style="margin-bottom:6px">
+        <button class="btn big green" onclick="choosePay('계좌이체')">계좌이체로 주문</button>
+        <button class="btn big blue" onclick="choosePay('카드결제')">카드결제로 주문</button>
+      </div>
+
+      <div class="formGrid" style="margin:6px 0 6px 0">
+        <div>
+          <div class="label">선택된 결제 방식</div>
+          <input id="payMethod" class="txt" value="계좌이체" readonly />
+        </div>
+        <div>
+          <div class="label">수량</div>
+          <input id="qty" type="number" class="txt" min="1" step="1" value="1" />
+        </div>
+      </div>
+
+      <div id="depositorBox">
+        <div class="label">입금자 성명 (계좌이체)</div>
+        <input id="depositor" class="txt" placeholder="예: 홍길동" />
+      </div>
+
+      <div class="formGrid" style="margin-top:6px">
+        <div>
+          <div class="label">수령자 이름</div>
+          <input id="recvName" class="txt" placeholder="예: 김솔리드" />
+        </div>
+        <div>
+          <div class="label">연락처</div>
+          <input id="recvPhone" class="txt" placeholder="예: 010-1234-5678" />
+        </div>
+      </div>
+
+      <!-- 주소: 다음 주소검색 연동 -->
+      <div class="label" style="margin-top:6px">주소</div>
+      <div class="row" style="gap:6px;margin-bottom:6px">
+        <input id="zip" class="txt" placeholder="우편번호" style="max-width:140px" readonly />
+        <button class="btn" type="button" onclick="findAddr()">주소 검색</button>
+      </div>
+      <input id="road" class="txt" placeholder="도로명 주소" readonly style="margin-bottom:6px" />
+      <input id="addrDetail" class="txt" placeholder="상세 주소 (동/호수 등)" />
+
+      <div class="label" style="margin-top:6px">요청사항</div>
+      <textarea id="recvNote" class="txt" placeholder="배송 관련 메모"></textarea>
+
+      <div class="copy" style="margin-top:8px">
+        <div><b>주문 미리보기</b> (카카오 채널로 전송됩니다)</div>
+        <pre id="orderPreview" style="white-space:pre-wrap;margin:6px 0 0 0"></pre>
+      </div>
+    </div>
+
+    <div class="modalFooter">
+      <button class="btn primary" onclick="sendOrder()">주문 보내기</button>
     </div>
   </div>
 </div>
@@ -151,8 +170,12 @@
 <!-- 공통 '주문 확인중' 모달 -->
 <div id="pendingBack" class="modalBack" onclick="closePending(event)">
   <div class="modal" onclick="event.stopPropagation()">
-    <h3>주문 확인중</h3>
-    <div class="muted" style="margin-bottom:10px; white-space:pre-wrap">
+    <div class="modalHeader">
+      <h3 style="margin:0;font-size:18px">주문 확인중</h3>
+      <button class="btn ghost" onclick="closePending()">확인</button>
+    </div>
+    <div class="modalBody">
+      <div class="muted" style="white-space:pre-wrap">
 영업시간 10:30~21:00 실시간 매장확인 연락드리며
 영업시간 이후 21:00~ 다음날 매장 오픈 이후 순차적으로 연락드립니다.
 결제/이체 확인 후 순차적으로 연락드리겠습니다. 카카오 채널 알림을 확인해 주세요.
@@ -162,9 +185,7 @@
 국민 616 701 01 634455 솔리드(한홍명)
 
 제품 수령 후 교환은 1주일 이내로 가능합니다.
-    </div>
-    <div class="row" style="justify-content:flex-end">
-      <button class="btn" onclick="closePending()">확인</button>
+      </div>
     </div>
   </div>
 </div>
@@ -178,6 +199,7 @@ const nz = v => (v==null ? '' : String(v).trim());
 function toInt(v, d=0){ try{ const s=String(v??'').replace(/[^\d-]/g,'').trim(); if(!s||s==='-')return d; return parseInt(s,10);}catch{return d;} }
 function fmtWon(v){ return (v==null||v==='') ? '' : Number(v).toLocaleString()+'원'; }
 
+/* 상태 규칙(매장 우선) */
 function decideState(store, wh, total){
   store=+store||0; wh=+wh||0; total=+total||0;
   if (store>=1 && wh>=1) return {label:'주문가능', cls:'ok', clickable:true};
@@ -250,8 +272,8 @@ function render(list){
     const firstColor = colors[0] || '(색상없음)';
     const firstRows  = item.colors.get(firstColor) || [];
     const head = `
-      <div class="grid" style="margin:6px 0 12px 0">
-        <div><div class="pill" style="font-weight:700;font-size:18px">${item.code}</div></div>
+      <div class="grid" style="margin:6px 0 8px 0">
+        <div><div class="pill" style="font-weight:700;font-size:16px">${item.code}</div></div>
         <div>
           <select id="${colorSelId}" class="select">
             ${colors.map(c=>`<option value="${c}">${c || '(색상없음)'}</option>`).join('')}
@@ -261,7 +283,7 @@ function render(list){
       </div>
       <div id="${colorSelId}_sizes" class="sizeCol"></div>
     `;
-    blocks.push(`<div style="border-top:1px solid #1c2430;padding-top:12px;margin-top:12px">${head}</div>`);
+    blocks.push(`<div style="border-top:1px solid #1c2430;padding-top:10px;margin-top:10px">${head}</div>`);
     setTimeout(()=> {
       updateSizes(colorSelId, item, firstColor);
       const sel = document.getElementById(colorSelId);
@@ -295,7 +317,20 @@ function updateSizes(id, item, color){
   box.innerHTML = html;
 }
 
-// ===== 즉시 주문 흐름 =====
+/* ===== 주소검색(다음) ===== */
+function findAddr(){
+  new daum.Postcode({
+    oncomplete: function(d) {
+      // 도로명 주소/우편번호 채우기
+      $('#zip').value  = d.zonecode || '';
+      $('#road').value = d.roadAddress || d.address || '';
+      $('#addrDetail').focus();
+      updatePreview();
+    }
+  }).open();
+}
+
+/* ===== 즉시 주문 흐름 ===== */
 let cur = {style:'', color:'', size:'', price:{p:null,q:null,r:null}, pay:'계좌이체'};
 function openOrderDirect(el){
   cur.style = el.getAttribute('data-style');
@@ -316,7 +351,9 @@ function openOrderDirect(el){
   $('#depositor').value = '';
   $('#recvName').value = '';
   $('#recvPhone').value = '';
-  $('#recvAddr').value = '';
+  $('#zip').value = '';
+  $('#road').value = '';
+  $('#addrDetail').value = '';
   $('#recvNote').value = '';
   showDepositor(cur.pay==='계좌이체');
   updatePreview();
@@ -334,7 +371,7 @@ function showDepositor(show){
   $('#depositorBox').style.display = show ? 'block' : 'none';
 }
 
-['qty','depositor','recvName','recvPhone','recvAddr','recvNote'].forEach(id=>{
+['qty','depositor','recvName','recvPhone','addrDetail','recvNote'].forEach(id=>{
   document.addEventListener('input', (e)=>{ if (e.target && e.target.id===id) updatePreview(); });
   document.addEventListener('change', (e)=>{ if (e.target && e.target.id===id) updatePreview(); });
 });
@@ -344,7 +381,10 @@ function buildOrderText(){
   const dep  = $('#depositor').value.trim();
   const name = $('#recvName').value.trim();
   const phone= $('#recvPhone').value.trim();
-  const addr = $('#recvAddr').value.trim();
+  const zip  = $('#zip').value.trim();
+  const road = $('#road').value.trim();
+  const detail= $('#addrDetail').value.trim();
+  const addr = [zip?`(${zip})`:'', road, detail].filter(Boolean).join(' ');
   const note = $('#recvNote').value.trim();
   const {p,q,r} = cur.price||{};
   const priceLine = [
@@ -376,25 +416,21 @@ function buildOrderText(){
 function updatePreview(){ $('#orderPreview').textContent = buildOrderText(); }
 
 function sendOrder(){
-  // 간단 유효성
   if (cur.pay==='계좌이체' && !$('#depositor').value.trim()){
     alert('입금자 성명을 입력해 주세요.');
     $('#depositor').focus(); return;
   }
   if (!$('#recvName').value.trim()){ alert('수령자 이름을 입력해 주세요.'); $('#recvName').focus(); return; }
   if (!$('#recvPhone').value.trim()){ alert('연락처를 입력해 주세요.'); $('#recvPhone').focus(); return; }
-  if (!$('#recvAddr').value.trim()){ alert('주소를 입력해 주세요.'); $('#recvAddr').focus(); return; }
+  if (!$('#road').value.trim()){ alert('주소 검색 버튼으로 도로명 주소를 입력해 주세요.'); return; }
 
   const msg = buildOrderText();
-  // 카카오 채널로 메모 전송 (새 창)
   window.open(KAKAO_CHAT + '?message=' + encodeURIComponent(msg), '_blank');
-
-  // “주문 확인중” 모달 표시
   closeOrder();
   $('#pendingBack').style.display='flex';
 }
 
-// ====== 검색 ======
+/* ====== 검색 ====== */
 function search(){
   const q = nz($('#q').value).toLowerCase();
   const rows = INV.filter(r=>{
@@ -407,7 +443,7 @@ function search(){
 $('#srchBtn').addEventListener('click', search);
 $('#q').addEventListener('keydown', (e)=>{ if (e.key==='Enter') search(); });
 
-// 초기 로드
+/* 초기 로드 */
 load().catch(()=>{});
 </script>
 </body>
