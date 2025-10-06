@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>솔리드옴므 아울렛 재고 조회</title>
-<link rel="manifest" href="manifest.webmanifest?v=9" />
+<link rel="manifest" href="manifest.webmanifest?v=10" />
 <style>
   :root { --bg:#0b0f14; --card:#121820; --muted:#94a3b8; --fg:#e8eef6; --accent:#5bbcff;
           --ok:#16a34a; --warn:#d97706; --bad:#ef4444; --incoming:#3b82f6; }
@@ -14,6 +14,11 @@
   h1{margin:0 0 20px 0;font-size:28px;}
   .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   .btn{background:#111827;border:1px solid #273547;color:#d9e7ff;padding:10px 14px;border-radius:12px;cursor:pointer}
+  .btn.big{padding:12px 16px;font-weight:700}
+  .btn.primary{background:#0f172a;border-color:#2b3a52}
+  .btn.green{background:#0f2b1b;border-color:#1f5c37}
+  .btn.blue{background:#0f1a3a;border-color:#3d4aac}
+  .btn.ghost{background:transparent;border-color:#2b3a52}
   .search{width:100%;padding:14px 16px;border-radius:14px;border:1px solid #273547;background:#0f1620;color:var(--fg);font-size:18px;}
   .card{background:linear-gradient(180deg,#121820,#0d1420);border:1px solid #1c2430;border-radius:16px;padding:18px;}
   .pill{border:1px solid #2a3950;background:#0f172a;color:#cfe8ff;border-radius:999px;padding:6px 10px;font-size:13px}
@@ -47,6 +52,7 @@
   .label{font-size:13px;color:#9fb0c6;margin:8px 0 4px}
   .formGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .right{display:flex;justify-content:flex-end;gap:8px}
+  .buttonRow{display:flex;gap:10px;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -91,13 +97,16 @@
       <div>• 오프라인 재고 연동이라 결제 후 품절 시 <b>전액 환불</b>됩니다.</div>
     </div>
 
+    <!-- 결제 방식: 두 개 버튼 -->
+    <div class="buttonRow" style="margin-bottom:6px">
+      <button class="btn big green" onclick="choosePay('계좌이체')">계좌이체로 주문</button>
+      <button class="btn big blue" onclick="choosePay('카드결제')">카드결제로 주문</button>
+    </div>
+
     <div class="formGrid" style="margin:6px 0 8px 0">
       <div>
-        <div class="label">결제 방식</div>
-        <select id="payMethod" class="sel" onchange="toggleDepositor()">
-          <option value="계좌이체">계좌이체</option>
-          <option value="카드결제">카드결제</option>
-        </select>
+        <div class="label">선택된 결제 방식</div>
+        <input id="payMethod" class="txt" value="계좌이체" readonly />
       </div>
       <div>
         <div class="label">수량</div>
@@ -133,8 +142,8 @@
     </div>
 
     <div class="right" style="margin-top:12px">
-      <button class="btn" onclick="sendOrder()">주문 보내기</button>
-      <button class="btn" onclick="closeOrder()">닫기</button>
+      <button class="btn primary" onclick="sendOrder()">주문 보내기</button>
+      <button class="btn ghost" onclick="closeOrder()">닫기</button>
     </div>
   </div>
 </div>
@@ -287,12 +296,13 @@ function updateSizes(id, item, color){
 }
 
 // ===== 즉시 주문 흐름 =====
-let cur = {style:'', color:'', size:'', price:{p:null,q:null,r:null}};
+let cur = {style:'', color:'', size:'', price:{p:null,q:null,r:null}, pay:'계좌이체'};
 function openOrderDirect(el){
   cur.style = el.getAttribute('data-style');
   cur.color = el.getAttribute('data-color');
   cur.size  = el.getAttribute('data-size');
   try { cur.price = JSON.parse(el.getAttribute('data-price')||'{}'); } catch { cur.price={}; }
+  cur.pay = '계좌이체';
   const {p,q,r} = cur.price||{};
   const priceLine = [
     q!=null?`정가 ${fmtWon(q)}`:'', 
@@ -302,30 +312,35 @@ function openOrderDirect(el){
 
   $('#orderSel').textContent = `선택: ${cur.style} ${cur.color || ''} ${cur.size || ''}  |  ${priceLine}`;
   $('#qty').value = 1;
-  $('#payMethod').value = '계좌이체';
+  $('#payMethod').value = cur.pay;
   $('#depositor').value = '';
   $('#recvName').value = '';
   $('#recvPhone').value = '';
   $('#recvAddr').value = '';
   $('#recvNote').value = '';
-  toggleDepositor();
+  showDepositor(cur.pay==='계좌이체');
   updatePreview();
   $('#orderBack').style.display='flex';
 }
 function closeOrder(){ $('#orderBack').style.display='none'; }
-function toggleDepositor(){
-  const need = $('#payMethod').value === '계좌이체';
-  $('#depositorBox').style.display = need ? 'block' : 'none';
+
+function choosePay(kind){
+  cur.pay = kind;
+  $('#payMethod').value = kind;
+  showDepositor(kind==='계좌이체');
   updatePreview();
 }
-['qty','depositor','recvName','recvPhone','recvAddr','recvNote','payMethod'].forEach(id=>{
+function showDepositor(show){
+  $('#depositorBox').style.display = show ? 'block' : 'none';
+}
+
+['qty','depositor','recvName','recvPhone','recvAddr','recvNote'].forEach(id=>{
   document.addEventListener('input', (e)=>{ if (e.target && e.target.id===id) updatePreview(); });
   document.addEventListener('change', (e)=>{ if (e.target && e.target.id===id) updatePreview(); });
 });
 
 function buildOrderText(){
   const qty  = Math.max(1, parseInt($('#qty').value||'1',10));
-  const pay  = $('#payMethod').value;
   const dep  = $('#depositor').value.trim();
   const name = $('#recvName').value.trim();
   const phone= $('#recvPhone').value.trim();
@@ -345,7 +360,7 @@ function buildOrderText(){
 수량: ${qty}
 가격: ${priceLine}
 
-결제방식: ${pay}${pay==='계좌이체' ? ` (입금자: ${dep || '(입력)'}, 계좌: 국민 616 701 01 634455 솔리드(한홍명))` : ''}
+결제방식: ${cur.pay}${cur.pay==='계좌이체' ? ` (입금자: ${dep || '(입력)'}, 계좌: 국민 616 701 01 634455 솔리드(한홍명))` : ''}
 
 [수령자 정보]
 이름: ${name}
@@ -362,8 +377,7 @@ function updatePreview(){ $('#orderPreview').textContent = buildOrderText(); }
 
 function sendOrder(){
   // 간단 유효성
-  const pay = $('#payMethod').value;
-  if (pay==='계좌이체' && !$('#depositor').value.trim()){
+  if (cur.pay==='계좌이체' && !$('#depositor').value.trim()){
     alert('입금자 성명을 입력해 주세요.');
     $('#depositor').focus(); return;
   }
