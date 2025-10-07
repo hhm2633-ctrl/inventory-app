@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>솔리드옴므 아울렛 재고 조회</title>
-<link rel="manifest" href="manifest.webmanifest?v=13" />
+<link rel="manifest" href="manifest.webmanifest?v=12" />
 <!-- 다음(카카오) 주소검색: 무료 -->
 <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 <style>
@@ -46,7 +46,7 @@
   .hint{font-size:12px;color:#a5b4c6}
   footer{margin:24px 0;color:#9aa7b8;font-size:13px;display:flex;gap:14px;flex-wrap:wrap;justify-content:flex-end}
   .hero{position:fixed;inset:0;z-index:-1;background:url('031.jpg') center/cover no-repeat;filter:brightness(.35)}
-  /* ===== 모달 ===== */
+  /* ===== 모달: 작게 + 스크롤 ===== */
   .modalBack{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:9999;padding:10px}
   .modal{width:min(560px,94vw);max-height:88vh;display:flex;flex-direction:column;
          background:#101622;border:1px solid #1e2a3a;border-radius:16px;}
@@ -93,6 +93,7 @@
   <footer>
     <a href="about.html">브랜드 소개</a>
     <a href="privacy.html">개인정보처리방침</a>
+    <a href="guide.html">주문·배송·교환 안내</a>
     <a href="tel:0221369886">매장 전화연결</a>
     <a href="https://pf.kakao.com/_EfjEj/chat" target="_blank" rel="noopener">카카오채널 연결</a>
   </footer>
@@ -170,49 +171,19 @@
       <textarea id="recvNote" class="txt" placeholder="배송 관련 메모"></textarea>
 
       <div class="copy" style="margin-top:8px">
-        <div><b>주문 미리보기</b> (카카오 채팅에 붙여넣게 됩니다)</div>
+        <div><b>주문 미리보기</b> (복사 후 카카오 채팅에 붙여넣기)</div>
         <pre id="orderPreview" style="white-space:pre-wrap;margin:6px 0 0 0"></pre>
       </div>
     </div>
 
     <div class="modalFooter">
+      <button class="btn" onclick="copyOrder()">주문 내용 복사</button>
       <button class="btn primary" onclick="sendOrder()">주문 보내기</button>
-      <button class="btn" onclick="shareOrder()">카카오로 공유</button>
     </div>
   </div>
 </div>
 
-<!-- ‘카카오에 붙여넣기’ 안내 모달 -->
-<div id="guideBack" class="modalBack" onclick="closeGuide(event)">
-  <div class="modal" onclick="event.stopPropagation()">
-    <div class="modalHeader">
-      <h3 style="margin:0;font-size:18px">카카오 채팅에 붙여넣기</h3>
-      <button class="btn ghost" onclick="closeGuide()">닫기</button>
-    </div>
-    <div class="modalBody">
-      <div class="note small" style="margin-bottom:8px">
-        아래 주문내용이 <b>클립보드로 복사</b>되었습니다.<br/>
-        <b>‘카카오 채널 열기’</b>를 눌러 채팅창에 <b>길게 눌러 붙여넣기</b> 해주세요.
-      </div>
-      <div class="copy">
-        <div style="font-weight:700;margin-bottom:6px">복사된 주문내용</div>
-        <pre id="copiedText" style="white-space:pre-wrap;margin:0"></pre>
-      </div>
-      <div class="small" id="copyStatus" style="margin-top:8px;color:#9fe4b0"></div>
-    </div>
-    <div class="modalFooter" style="justify-content:space-between">
-      <div class="buttonRow">
-        <button class="btn" onclick="reCopy()">복사 다시하기</button>
-        <button class="btn" id="nativeShareBtn" style="display:none" onclick="nativeShare()">공유하기(모바일)</button>
-      </div>
-      <div class="right">
-        <a class="btn primary" target="_blank" rel="noopener" href="https://pf.kakao.com/_EfjEj/chat">카카오 채널 열기</a>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- 공통 '주문 확인중' 모달 (필요 시 사용) -->
+<!-- 공통 '주문 확인중' 모달 -->
 <div id="pendingBack" class="modalBack" onclick="closePending(event)">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modalHeader">
@@ -238,10 +209,7 @@
 <script>
 /* ===== 상수 & 유틸 ===== */
 const INV_URL = `inventory.json?v=${Date.now()}`;
-const KAKAO_CHAT = 'https://pf.kakao.com/_EfjEj/chat';
-// 구글 스프레드시트 기록을 쓴다면 본인 웹앱 URL로 교체 (없으면 빈 문자열 '' 유지해도 됨)
-const GAS_URL = '';
-
+const KAKAO_CHAT = 'https://pf.kakao.com/_EfjEj/chat'; // 고객 채팅용 URL (센터 URL 아님)
 const FREE_SHIP_THRESHOLD = 400000; // 40만원
 const SHIP_FEE = 3000;              // 3천원
 
@@ -250,26 +218,7 @@ const nz = v => (v==null ? '' : String(v).trim());
 function toInt(v, d=0){ try{ const s=String(v??'').replace(/[^\d-]/g,'').trim(); if(!s||s==='-')return d; return parseInt(s,10);}catch{return d;} }
 function fmtWon(v){ return (v==null||v==='') ? '-' : Number(v).toLocaleString()+'원'; }
 
-/* 모달 공용 */
-function openPending(){ $('#pendingBack').style.display='flex'; }
-function closePending(e){ if(e) e.stopPropagation(); $('#pendingBack').style.display='none'; }
-function openGuide(text){ $('#copiedText').textContent=text; $('#guideBack').style.display='flex';
-  // 모바일 네이티브 공유 버튼 표시 여부
-  $('#nativeShareBtn').style.display = (navigator.share ? 'inline-block' : 'none');
-}
-function closeGuide(e){ if(e) e.stopPropagation(); $('#guideBack').style.display='none'; }
-
-/* 상태 규칙(매장 우선) */
-function decideState(store, wh, total){
-  store=+store||0; wh=+wh||0; total=+total||0;
-  if (store>=1 && wh>=1) return {label:'주문가능', cls:'ok', clickable:true};
-  if (store==0 && wh>=1) return {label:'주문불가(미입고)', cls:'incoming', clickable:false};
-  if (total<=9) return {label:'품절임박', cls:'warn', clickable:true};
-  if (store>=1) return {label:'주문가능', cls:'ok', clickable:true};
-  if (store==0 && wh==0) return {label:'주문불가', cls:'bad', clickable:false};
-  return {label:'주문가능', cls:'ok', clickable:true};
-}
-
+/* ===== 인벤토리 로드 및 정규화 ===== */
 function normalizeRow(r){
   const out = {...r};
   if (out['매장재고']==null && out['매장합']!=null) out['매장재고']=out['매장합'];
@@ -280,11 +229,54 @@ function normalizeRow(r){
   return out;
 }
 
-let INV=[];
+let INV=[];          // 원본 행들
+let STYLE_AGG=new Map(); // 품번(스타일) 단위 집계
+
+function buildStyleAgg(rows){
+  STYLE_AGG.clear();
+  for (const r of rows){
+    const style = String(r['상품코드']||'').toUpperCase();
+    if(!style) continue;
+    const cur = STYLE_AGG.get(style) || {store:0, wh:0, total:0};
+    const store = (+r['매장재고']||+r['매장수량']||0);
+    const wh    = (+r['창고재고']||+r['물류수량']||0);
+    const tot   = (+r['전체재고']||+r['전체수량']||store+wh);
+    cur.store += store;
+    cur.wh    += wh;
+    cur.total+= tot;
+    STYLE_AGG.set(style, cur);
+  }
+}
+
 async function load(){
   const res = await fetch(INV_URL, {cache:'no-store'});
   INV = (await res.json()).map(normalizeRow);
+  buildStyleAgg(INV); // ★ 품번 단위 집계
 }
+
+/* ===== 상태 규칙(품번 기준) ===== */
+function decideStateByStyle(style){
+  const key = String(style||'').toUpperCase();
+  const agg = STYLE_AGG.get(key) || {store:0, wh:0, total:0};
+  const hasStore = agg.store > 0;
+  const hasWh    = agg.wh > 0;
+  const total    = agg.total || (agg.store + agg.wh);
+
+  if (hasStore && hasWh){
+    if (total <= 9) return {label:'품절임박', cls:'warn', clickable:true};
+    return {label:'주문가능', cls:'ok', clickable:true};
+  }
+  if (hasStore && !hasWh){
+    if (total <= 9) return {label:'품절임박', cls:'warn', clickable:true};
+    return {label:'주문가능', cls:'ok', clickable:true};
+  }
+  if (!hasStore && hasWh){
+    return {label:'주문불가(미입고)', cls:'incoming', clickable:false};
+  }
+  return {label:'주문불가', cls:'bad', clickable:false};
+}
+
+/* ===== 스타일/색상으로 묶기 + 사이즈 정렬 ===== */
 function groupByStyle(rows){
   const map = new Map();
   for (const r of rows){
@@ -297,12 +289,14 @@ function groupByStyle(rows){
     entry.colors.get(color).push(r);
   }
   const orderRTW=['44','46','48','50','52','54'];
-  const orderP=['28','30','31','32','33','34','36'];
-  const orderS=['39','40','41','42','43'];
+  const orderP  =['28','30','31','32','33','34','36'];
+  const orderS  =['39','40','41','42','43'];
   const idx=(s)=> orderRTW.includes(s)?orderRTW.indexOf(s):orderP.includes(s)?100+orderP.indexOf(s):orderS.includes(s)?200+orderS.indexOf(s):999;
   for (const [,v] of map){ for (const [c,arr] of v.colors){ arr.sort((a,b)=>idx(nz(a['사이즈']))-idx(nz(b['사이즈']))); v.colors.set(c,arr);} }
   return map;
 }
+
+/* ===== 가격 계산/표시 ===== */
 function computePrice(rows){
   const r0 = rows.find(r=> r['판매가']!=null || r['소비자가']!=null || r['할인율']!=null) || {};
   let p = toInt(r0['판매가'], null);
@@ -359,6 +353,7 @@ function renderTotals(){
   $('#shipHint').textContent    = t.hint;
 }
 
+/* ===== 렌더링 ===== */
 function render(list){
   if (!list.length){ $('#result').innerHTML = `<div style="color:#9aa7b8">검색 결과가 없습니다.</div>`; return; }
   const g = groupByStyle(list);
@@ -401,14 +396,14 @@ function updateSizes(id, item, color){
     box.innerHTML = `<div class="sizeItem"><span class="sizeTag">-</span><span class="state bad">주문불가</span></div>`;
     return;
   }
+  const styleState = decideStateByStyle(item.code); // ★ 품번 기준 상태 사용
   const html = rows.map(r=>{
     const size = nz(r['사이즈'])||'-';
-    const st = decideState(r['매장재고'], r['창고재고'], r['전체재고']);
     const attrs = `data-style="${item.code}" data-color="${color}" data-size="${size}" data-price='${JSON.stringify(computePrice(rows))}'`;
-    const clickable = st.clickable ? `onclick="openOrderDirect(this)" role="button" tabindex="0"` : 'aria-disabled="true"';
+    const clickable = styleState.clickable ? `onclick="openOrderDirect(this)" role="button" tabindex="0"` : 'aria-disabled="true"';
     return `<div class="sizeItem">
               <span class="sizeTag">${size}</span>
-              <span class="state ${st.cls}" ${attrs} ${clickable}>${st.label}</span>
+              <span class="state ${styleState.cls}" ${attrs} ${clickable}>${styleState.label}</span>
             </div>`;
   }).join('');
   box.innerHTML = html;
@@ -428,6 +423,7 @@ function findAddr(){
 
 /* ===== 즉시 주문 흐름 ===== */
 let cur = {style:'', color:'', size:'', price:{p:null,q:null,r:null}, pay:'계좌이체'};
+
 function openOrderDirect(el){
   cur.style = el.getAttribute('data-style');
   cur.color = el.getAttribute('data-color');
@@ -525,81 +521,45 @@ ${payLine}
 }
 function updatePreview(){ $('#orderPreview').textContent = buildOrderText(); }
 
-/* ====== 주문 전송(복사 + 안내) ====== */
+/* ===== 복사/전송 플로우 ===== */
+async function copyOrder(){
+  const msg = buildOrderText();
+  try{
+    await navigator.clipboard.writeText(msg);
+    alert('주문 내용이 클립보드에 복사되었습니다.\n카카오 채널 대화창에서 붙여넣기 해주세요.');
+  }catch{
+    // HTTPS나 권한문제로 실패하면 수동 선택
+    const ta = document.createElement('textarea');
+    ta.value = msg;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    alert('복사 기능이 제한되어 수동 복사를 시도했습니다.\n카카오 채널 대화창에서 붙여넣기 해주세요.');
+  }
+}
+
 async function sendOrder(){
+  // 필수값 체크
   if (cur.pay==='계좌이체' && !$('#depositor').value.trim()){
-    alert('입금자 성명을 입력해 주세요.'); $('#depositor').focus(); return;
+    alert('입금자 성명을 입력해 주세요.');
+    $('#depositor').focus(); return;
   }
   if (!$('#recvName').value.trim()){ alert('수령자 이름을 입력해 주세요.'); $('#recvName').focus(); return; }
   if (!$('#recvPhone').value.trim()){ alert('연락처를 입력해 주세요.'); $('#recvPhone').focus(); return; }
   if (!$('#road').value.trim()){ alert('주소 검색 버튼으로 도로명 주소를 입력해 주세요.'); return; }
 
-  const msg = buildOrderText();
+  // 1) 자동 복사
+  await copyOrder();
 
-  // (선택) 구글 시트 기록
-  if (GAS_URL && GAS_URL.startsWith('https://script.google.com/macros/s/AKfycbxeTcNjkLYiitoKuP0AGVNmIsiiECUKAhFvLkTvxVBDeKA4DtTUHQGcUDMHsuUXcoa-/exec')){
-    try{
-      const payload = {
-        style: cur.style, color: cur.color, size: cur.size,
-        qty: Math.max(1, parseInt($('#qty').value||'1',10)),
-        price_text: (msg.match(/가격:[\s\S]*?배송:/)?.[0] || '').replace(/배송:$/,'').trim(),
-        pay_method: $('#payMethod').value || '계좌이체',
-        name: $('#recvName').value.trim(),
-        phone: $('#recvPhone').value.trim(),
-        addr: [$('#zip').value?`(${$('#zip').value})`:'', $('#road').value, $('#addrDetail').value].filter(Boolean).join(' '),
-        note: $('#recvNote').value.trim()
-      };
-      fetch(GAS_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) }).catch(()=>{});
-    }catch{}
-  }
+  // 2) 카카오 채팅창 열기(메시지 자동채움은 불가)
+  window.open(KAKAO_CHAT, '_blank');
 
-  // 클립보드 복사 + 안내창 열기
-  await copyAndGuide(msg);
-}
-
-async function shareOrder(){
-  const msg = buildOrderText();
-  // (선택) 기록
-  if (GAS_URL && GAS_URL.startsWith('https://')){
-    try{
-      const payload = { style: cur.style, color: cur.color, size: cur.size,
-        qty: Math.max(1, parseInt($('#qty').value||'1',10)), price_text: '',
-        pay_method: $('#payMethod').value || '계좌이체',
-        name: $('#recvName').value.trim(), phone: $('#recvPhone').value.trim(),
-        addr: [$('#zip').value?`(${$('#zip').value})`:'', $('#road').value, $('#addrDetail').value].filter(Boolean).join(' '),
-        note: $('#recvNote').value.trim()
-      };
-      fetch(GAS_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) }).catch(()=>{});
-    }catch{}
-  }
-  // 동일하게 복사 + 안내창
-  await copyAndGuide(msg);
-}
-
-/* 공통: 복사 후 안내 모달 */
-async function copyAndGuide(text){
-  let ok=false;
-  try{ await navigator.clipboard.writeText(text); ok=true; }catch{}
-  $('#copyStatus').textContent = ok ? '복사가 완료되었습니다. 카카오 채널에서 메시지 입력란에 붙여넣기 해주세요.' :
-                                      '브라우저 정책으로 자동복사가 안될 수 있어요. 아래 내용을 길게 눌러 복사해주세요.';
-  $('#copiedText').textContent = text;
+  // 3) 안내 모달
   closeOrder();
-  openGuide(text);
+  $('#pendingBack').style.display='flex';
 }
-
-/* 안내 모달 내부 동작 */
-async function reCopy(){
-  const text = $('#copiedText').textContent || '';
-  try{ await navigator.clipboard.writeText(text);
-       $('#copyStatus').textContent = '다시 복사 완료! 카카오 채팅에 붙여넣어 주세요.'; }
-  catch{ $('#copyStatus').textContent = '자동복사가 안되면 아래 내용을 길게 눌러 직접 복사해주세요.'; }
-}
-async function nativeShare(){
-  const text = $('#copiedText').textContent || '';
-  if (navigator.share){
-    try{ await navigator.share({ text }); }catch{}
-  }
-}
+function closePending(){ $('#pendingBack').style.display='none'; }
 
 /* ====== 검색 ====== */
 function search(){
