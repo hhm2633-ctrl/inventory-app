@@ -28,6 +28,7 @@
   .state.ok{background:#0f2b1b;border-color:#1f5c37;color:#b9f7d5}
   .state.warn{background:#2c1e0a;border-color:#7a4d17;color:#ffe4b5}
   .state.bad{background:#3a0f14;border-color:#7a1d22;color:#ffc9c9; cursor:default}
+  .state.incoming{background:#0f1a3a;border-color:#3d4aac;color:#d2d8ff; cursor:default}
   .state:disabled{opacity:.6;cursor:not-allowed}
   .sizeCol{display:flex;flex-direction:column;gap:8px}
   .sizeItem{display:flex;align-items:center;gap:10px}
@@ -55,11 +56,15 @@
   .modalBody{padding:14px 16px;overflow:auto}
   .modalFooter{padding:12px 16px;border-top:1px solid #1c2430;display:flex;justify-content:flex-end;gap:8px}
   .muted{color:#a1a8b5}
+  .copy{border:1px dashed #2e3c52;border-radius:10px;padding:8px 10px;background:#0f172a}
+  .note{background:#0e1522;border:1px solid #203047;border-radius:12px;padding:10px}
   .small{font-size:12px;color:#9fb0c6}
-  input.txt, textarea.txt{width:100%;padding:9px 11px;border-radius:10px;border:1px solid #2a3950;background:#0f172a;color:#e7f0ff;font-size:14px}
+  input.txt, textarea.txt, select.sel{width:100%;padding:9px 11px;border-radius:10px;border:1px solid #2a3950;background:#0f172a;color:#e7f0ff;font-size:14px}
   textarea.txt{min-height:64px;resize:vertical}
   .label{font-size:12px;color:#9fb0c6;margin:6px 0 4px}
   .formGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .right{display:flex;justify-content:flex-end;gap:8px}
+  .buttonRow{display:flex;gap:8px;flex-wrap:wrap}
   @media (max-width:520px){ .grid{grid-template-columns:1fr;gap:8px} }
 </style>
 </head>
@@ -68,7 +73,7 @@
 <div class="wrap">
   <div class="row" style="justify-content:flex-end;gap:8px;margin-bottom:6px">
     <a class="btn" href="tel:0221369886">📞 매장 전화</a>
-    <a class="btn" href="https://pf.kakao.com/_EfjEj" target="_blank">💬 카카오 채널</a>
+    <a class="btn" href="https://pf.kakao.com/_EfjEj" target="_blank" rel="noopener">💬 카카오 채널</a>
   </div>
 
   <h1>솔리드옴므 아울렛 재고 조회</h1>
@@ -84,28 +89,108 @@
     <h3 style="margin:0 0 10px 0">재고 결과</h3>
     <div id="result"></div>
   </div>
+
+  <footer>
+    <a href="about.html">브랜드 소개</a>
+    <a href="privacy.html">개인정보처리방침</a>
+    <a href="guide.html">주문·배송·교환 안내</a>
+  </footer>
 </div>
 
 <!-- 주문 모달 -->
 <div id="orderBack" class="modalBack" onclick="closeOrder(event)">
   <div class="modal" onclick="event.stopPropagation()">
-    <div class="modalHeader"><h3 style="margin:0;font-size:18px">주문서 작성</h3><button class="btn ghost" onclick="closeOrder()">닫기</button></div>
+    <div class="modalHeader">
+      <h3 style="margin:0;font-size:18px">주문서 작성</h3>
+      <button class="btn ghost" type="button" onclick="closeOrder()">닫기</button>
+    </div>
+
     <div class="modalBody">
       <div id="orderSel" class="muted" style="margin-bottom:8px"></div>
+
+      <div class="note small" style="margin:6px 0 10px 0">
+        <div>• <b>택배비</b> : <b>40만원 이상 무료</b> / 그 이하는 <b>3,000원</b></div>
+        <div>• <b>교환/반품</b> : 수령 후 7일 이내 (왕복 <b>7,000원</b>)</div>
+        <div>• 오프라인 재고 연동이라 결제 후 품절 시 <b>전액 환불</b>됩니다.</div>
+      </div>
+
+      <div class="buttonRow" style="margin-bottom:6px">
+        <button class="btn big green" type="button" onclick="choosePay('계좌이체')">계좌이체로 주문</button>
+        <button class="btn big blue"  type="button" onclick="choosePay('카드결제')">카드결제로 주문</button>
+      </div>
+
+      <div class="formGrid" style="margin:6px 0 6px 0">
+        <div>
+          <div class="label">선택된 결제 방식</div>
+          <input id="payMethod" class="txt" value="계좌이체" readonly />
+        </div>
+        <div>
+          <div class="label">수량</div>
+          <input id="qty" type="number" class="txt" min="1" step="1" value="1" />
+        </div>
+      </div>
+
+      <div id="depositorBox">
+        <div class="label">입금자 성명 (계좌이체)</div>
+        <input id="depositor" class="txt" placeholder="예: 홍길동" />
+      </div>
+
+      <!-- 체형/착용 정보 수집 -->
       <div class="formGrid" style="margin-top:8px">
-        <div><div class="label">키 (cm)</div><input id="height" class="txt" placeholder="예: 178" inputmode="numeric" /></div>
-        <div><div class="label">몸무게 (kg)</div><input id="weight" class="txt" placeholder="예: 72" inputmode="numeric" /></div>
+        <div>
+          <div class="label">키 (cm) — 공개 동의시 다른 고객에게 도움됩니다</div>
+          <input id="height" class="txt" placeholder="예: 178" inputmode="numeric" />
+        </div>
+        <div>
+          <div class="label">몸무게 (kg)</div>
+          <input id="weight" class="txt" placeholder="예: 72" inputmode="numeric" />
+        </div>
       </div>
       <label class="small" style="display:flex;gap:6px;align-items:center;margin-top:6px">
-        <input id="shareFit" type="checkbox" /> 이 체형 정보를 익명으로 공개
+        <input id="shareFit" type="checkbox" />
+        주문한 <b>스타일/컬러/사이즈 + 키/몸무게</b>를 익명으로 공개하여 다음 고객에게 도움 주기 (선택)
       </label>
+
+      <!-- 금액 요약 -->
+      <div id="totalBox" class="totalBox" style="margin-top:8px">
+        <div class="line"><span>단가</span><span id="unitPrice">-</span></div>
+        <div class="line"><span>수량</span><span id="qtyView">1</span></div>
+        <div class="line"><span>소계</span><span id="subtotalView">-</span></div>
+        <div class="line"><span>배송비</span><span id="shipView">-</span></div>
+        <div class="line sum"><span id="totalLabel">결제금액</span><span id="totalView">-</span></div>
+        <div class="hint" id="shipHint" style="margin-top:4px"></div>
+      </div>
+
+      <div class="formGrid" style="margin-top:8px">
+        <div>
+          <div class="label">수령자 이름</div>
+          <input id="recvName" class="txt" placeholder="예: 김솔리드" />
+        </div>
+        <div>
+          <div class="label">연락처</div>
+          <input id="recvPhone" class="txt" placeholder="예: 010-1234-5678" />
+        </div>
+      </div>
+
+      <div class="label" style="margin-top:6px">주소</div>
+      <div class="row" style="gap:6px;margin-bottom:6px">
+        <input id="zip" class="txt" placeholder="우편번호" style="max-width:140px" readonly />
+        <button class="btn" type="button" onclick="findAddr()">주소 검색</button>
+      </div>
+      <input id="road" class="txt" placeholder="도로명 주소" readonly style="margin-bottom:6px" />
+      <input id="addrDetail" class="txt" placeholder="상세 주소 (동/호수 등)" />
+
+      <div class="label" style="margin-top:6px">요청사항</div>
+      <textarea id="recvNote" class="txt" placeholder="배송 관련 메모"></textarea>
+
       <div class="copy" style="margin-top:8px">
-        <div><b>주문 미리보기</b></div>
+        <div><b>주문 미리보기</b> (카카오 채널로 전송됩니다)</div>
         <pre id="orderPreview" style="white-space:pre-wrap;margin:6px 0 0 0"></pre>
       </div>
     </div>
+
     <div class="modalFooter">
-      <button class="btn primary" onclick="sendOrder()">주문 보내기</button>
+      <button class="btn primary" type="button" onclick="sendOrder()">주문 보내기</button>
     </div>
   </div>
 </div>
@@ -113,74 +198,409 @@
 <!-- 주문 확인중 모달 -->
 <div id="pendingBack" class="modalBack" onclick="closePending(event)">
   <div class="modal" onclick="event.stopPropagation()">
-    <div class="modalHeader"><h3 style="margin:0;font-size:18px">주문 확인중</h3><button class="btn ghost" onclick="closePending()">확인</button></div>
-    <div class="modalBody"><div class="muted">
+    <div class="modalHeader">
+      <h3 style="margin:0;font-size:18px">주문 확인중</h3>
+      <button class="btn ghost" type="button" onclick="closePending()">확인</button>
+    </div>
+    <div class="modalBody">
+      <div class="muted" style="white-space:pre-wrap">
 영업시간 10:30~21:00 실시간 매장확인 연락드리며
-영업시간 이후 주문은 다음날 순차적으로 연락드립니다.
-택배비: 40만원 이상 무료 / 그 이하 3,000원
-단순 교환 왕복 7,000원 / 국민 61670101634455 솔리드(한홍명)
-    </div></div>
+영업시간 이후 21:00~ 다음날 매장 오픈 이후 순차적으로 연락드립니다.
+결제/이체 확인 후 순차적으로 연락드리겠습니다. 카카오 채널 알림을 확인해 주세요.
+
+택배비 안내 40만원 이상 구매시 무료배송 / 그 이하 3,000원 
+단순 변심 교환 왕복 택배비 7,000원
+국민 616 701 01 634455 솔리드(한홍명)
+
+제품 수령 후 교환은 1주일 이내로 가능합니다.
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
+/* ===== 설정 ===== */
 const INV_URL = `inventory.json?v=${Date.now()}`;
 const KAKAO_CHAT = 'https://pf.kakao.com/_EfjEj/chat';
-const FIT_API = 'https://script.google.com/macros/s/AKfycbxiEClhSskp-Cz4ufqv7pr_1TUeRLfPPp0sWUX0t01obnQ7ISUTPwVSxyerx3PrXwPd/exec'; // 바꾸세요
+const FREE_SHIP_THRESHOLD = 400000;
+const SHIP_FEE = 3000;
+/* ★★★ 구글 앱스 스크립트 웹앱 URL (deploy 후 exec 주소로 교체) ★★★ */
+const FIT_API = 'https://script.google.com/macros/s/AKfycbxiEClhSskp-Cz4ufqv7pr_1TUeRLfPPp0sWUX0t01obnQ7ISUTPwVSxyerx3PrXwPd/exec';
 
-function $(s){return document.querySelector(s);}
-function nz(v){return v==null?'':String(v).trim();}
-function fmtWon(v){return (v==null||v==='')?'-':Number(v).toLocaleString()+'원';}
+/* ===== 유틸 ===== */
+const $  = s => document.querySelector(s);
+const nz = v => (v==null ? '' : String(v).trim());
+function toInt(v, d=0){ try{ const s=String(v??'').replace(/[^\d-]/g,'').trim(); if(!s||s==='-')return d; return parseInt(s,10);}catch{return d;} }
+function fmtWon(v){ return (v==null||v==='') ? '-' : Number(v).toLocaleString()+'원'; }
 
-async function load(){
-  const res=await fetch(INV_URL,{cache:'no-store'});
-  INV=await res.json();
+/* 상태 규칙 */
+function decideState(store, wh, total){
+  store=+store||0; wh=+wh||0; total=+total||0;
+  if (store>=1 && wh>=1) return {label:'주문가능', cls:'ok', clickable:true};
+  if (store==0 && wh>=1) return {label:'품절임박', cls:'warn', clickable:true}; // 창고만: 상담 가능
+  if (total<=9) return {label:'품절임박', cls:'warn', clickable:true};
+  if (store>=1) return {label:'주문가능', cls:'ok', clickable:true};
+  if (store==0 && wh==0) return {label:'주문불가', cls:'bad', clickable:false};
+  return {label:'주문가능', cls:'ok', clickable:true};
+}
+
+/* 데이터 정규화 */
+function normalizeRow(r){
+  const out = {...r};
+  if (out['매장재고']==null && out['매장합']!=null) out['매장재고']=out['매장합'];
+  if (out['창고재고']==null && out['물류합']!=null) out['창고재고']=out['물류합'];
+  if (out['전체재고']==null && out['전체합']!=null) out['전체재고']=out['전체합'];
+  if (out['소비자가']==null && out['할인전가격']!=null) out['소비자가']=out['할인전가격'];
+  if (out['할인율']==null && out['할인율(%)']!=null) out['할인율']=out['할인율(%)'];
+  return out;
 }
 let INV=[];
+async function load(){
+  const res = await fetch(INV_URL, {cache:'no-store'});
+  INV = (await res.json()).map(normalizeRow);
+}
 
+/* 그룹화/정렬 */
+function groupByStyle(rows){
+  const map = new Map();
+  for (const r of rows){
+    const code = nz(r['상품코드']).toUpperCase();
+    const color = nz(r['색상']);
+    const size  = nz(r['사이즈']);
+    if (!map.has(code)) map.set(code, {code, colors:new Map()});
+    const entry = map.get(code);
+    if (!entry.colors.has(color)) entry.colors.set(color, []);
+    entry.colors.get(color).push(r);
+  }
+  const orderRTW=['44','46','48','50','52','54'];
+  const orderP=['28','30','31','32','33','34','36'];
+  const orderS=['39','40','41','42','43'];
+  const idx=(s)=> orderRTW.includes(s)?orderRTW.indexOf(s):orderP.includes(s)?100+orderP.indexOf(s):orderS.includes(s)?200+orderS.indexOf(s):999;
+  for (const [,v] of map){ for (const [c,arr] of v.colors){ arr.sort((a,b)=>idx(nz(a['사이즈']))-idx(nz(b['사이즈']))); v.colors.set(c,arr);} }
+  return map;
+}
+function computePrice(rows){
+  const r0 = rows.find(r=> r['판매가']!=null || r['소비자가']!=null || r['할인율']!=null) || {};
+  let p = toInt(r0['판매가'], null);
+  let q = toInt(r0['소비자가'], null);
+  let r = r0['할인율']!=null ? Number(r0['할인율']) : null;
+  if ((r==null || Number.isNaN(r)) && p!=null && q!=null && q>0) r = Math.round((1 - p/q) * 1000)/10;
+  if ((q==null || q===0) && p!=null && r!=null) q = Math.round(p / (1 - r/100));
+  return {p,q,r};
+}
+function priceHTML(rows){
+  const {p,q,r} = computePrice(rows);
+  if (p==null && q==null) return `<div class="pill">가격 정보 없음</div>`;
+  const a=[];
+  if (q!=null) a.push(`<span class="orig">정가 ${fmtWon(q)}</span>`);
+  if (p!=null) a.push(`<span class="now">판매가 ${fmtWon(p)}</span>`);
+  if (r!=null) a.push(`<span class="rate">(-${r}%)</span>`);
+  return `<div class="price">${a.join(' ')}</div>`;
+}
+
+/* 결제 합계 */
+function calcTotals(price, qty, pay){
+  const unit = (price.p!=null ? price.p : price.q);
+  const unitSafe = (unit==null ? 0 : unit);
+  const subtotal = unitSafe * qty;
+
+  let shipFee = 0;
+  let total = subtotal;
+  let hint = '';
+
+  if (subtotal >= FREE_SHIP_THRESHOLD){
+    hint = '40만원 이상 구매로 무료배송입니다.';
+  }else{
+    if (pay === '계좌이체'){
+      shipFee = SHIP_FEE;
+      total = subtotal + shipFee;
+      hint = '계좌이체: 40만원 미만은 배송비 3,000원이 총액에 포함됩니다.';
+    }else{
+      hint = '카드결제: 40만원 미만은 배송비 3,000원이 추가됩니다(결제 안내 시 고지).';
+    }
+  }
+  return { unit, subtotal, shipFee, total, hint };
+}
+
+/* 렌더 */
 function render(list){
-  if(!list.length){$('#result').innerHTML='<div style="color:#9aa7b8">검색 결과가 없습니다.</div>';return;}
-  const html=list.map(r=>`<div class="pill">${r['상품코드']} ${r['색상']} ${r['사이즈']} - ${r['판매가']?fmtWon(r['판매가']):'가격정보 없음'} <button class='btn small' onclick="openOrder('${r['상품코드']}','${r['색상']}','${r['사이즈']}')">주문</button></div>`).join('');
-  $('#result').innerHTML=html;
+  if (!list.length){ $('#result').innerHTML = `<div style="color:#9aa7b8">검색 결과가 없습니다.</div>`; return; }
+  const g = groupByStyle(list);
+  const blocks=[];
+  for (const [, item] of g){
+    const colors = Array.from(item.colors.keys());
+    const colorSelId = 'color_'+Math.random().toString(36).slice(2,8);
+    const firstColor = colors[0] || '(색상없음)';
+    const firstRows  = item.colors.get(firstColor) || [];
+    const head = `
+      <div class="grid" style="margin:6px 0 8px 0">
+        <div><div class="pill" style="font-weight:700;font-size:16px">${item.code}</div></div>
+        <div>
+          <select id="${colorSelId}" class="select">
+            ${colors.map(c=>`<option value="${c}">${c || '(색상없음)'}</option>`).join('')}
+          </select>
+        </div>
+        <div id="${colorSelId}_price">${priceHTML(firstRows)}</div>
+      </div>
+      <div id="${colorSelId}_sizes" class="sizeCol"></div>
+      <div id="${colorSelId}_fit" class="fitBox">
+        <div class="fitHead">
+          <div><b>구매자 체형/착용사이즈 후기</b> <span class="fitSmall">(익명, 최근 10건)</span></div>
+          <button class="btn ghost" type="button" onclick="reloadFit('${item.code}','${firstColor}','${colorSelId}')">새로고침</button>
+        </div>
+        <div class="fitList" id="${colorSelId}_fitList"></div>
+      </div>
+    `;
+    blocks.push(`<div style="border-top:1px solid #1c2430;padding-top:10px;margin-top:10px">${head}</div>`);
+    setTimeout(()=> {
+      updateSizes(colorSelId, item, firstColor);
+      const sel = document.getElementById(colorSelId);
+      sel?.addEventListener('change', (e)=>{
+        const c = e.target.value;
+        updateSizes(colorSelId, item, c);
+        document.getElementById(colorSelId+'_price').innerHTML = priceHTML(item.colors.get(c)||[]);
+        reloadFit(item.code, c, colorSelId);
+      });
+      reloadFit(item.code, firstColor, colorSelId);
+    }, 0);
+  }
+  $('#result').innerHTML = blocks.join('');
 }
 
-function search(){
-  const q=nz($('#q').value).toLowerCase();
-  const rows=INV.filter(r=>nz(r['상품코드']).toLowerCase().includes(q));
-  render(rows);
+function updateSizes(id, item, color){
+  const box = document.getElementById(id+'_sizes');
+  const rows = item.colors.get(color)||[];
+  if (!rows.length){
+    box.innerHTML = `<div class="sizeItem"><span class="sizeTag">-</span><span class="state bad">주문불가</span></div>`;
+    return;
+  }
+  const html = rows.map(r=>{
+    const size = nz(r['사이즈'])||'-';
+    const st = decideState(r['매장재고'], r['창고재고'], r['전체재고']);
+    const attrs = `data-style="${item.code}" data-color="${color}" data-size="${size}" data-price='${JSON.stringify(computePrice(rows))}'`;
+    const clickable = st.clickable ? `onclick="openOrderDirect(this)" role="button" tabindex="0"` : 'aria-disabled="true"';
+    return `<div class="sizeItem">
+              <span class="sizeTag">${size}</span>
+              <span class="state ${st.cls}" ${attrs} ${clickable}>${st.label}</span>
+            </div>`;
+  }).join('');
+  box.innerHTML = html;
 }
-$('#srchBtn').onclick=search;
-$('#q').onkeydown=e=>{if(e.key==='Enter')search();};
 
-let cur={style:'',color:'',size:''};
-function openOrder(style,color,size){
-  cur={style,color,size};
-  $('#orderSel').textContent=`선택: ${style} ${color} ${size}`;
-  $('#orderPreview').textContent=`상품코드: ${style}\n색상: ${color}\n사이즈: ${size}`;
+/* 후기 불러오기/그리기 */
+async function reloadFit(style,color,baseId){
+  const host = document.getElementById(baseId+'_fitList');
+  if(!host) return;
+  try{
+    const url = `${FIT_API}?style=${encodeURIComponent(style)}&color=${encodeURIComponent(color)}`;
+    const res = await fetch(url, {cache:'no-store'});
+    const data = await res.json();
+    const list = (data.list||[]).slice(-10).reverse();
+    if(!list.length){
+      host.innerHTML = `<div class="fitSmall">아직 후기가 없습니다. 첫 번째 후기를 남겨주세요!</div>`;
+      return;
+    }
+    host.innerHTML = list.map(x=>`
+      <div class="fitItem">
+        <div><b>${x.size}</b> 착용</div>
+        <div class="fitSmall">${x.height_cm?`${x.height_cm}cm`:''} ${x.weight_kg?`${x.weight_kg}kg`:''}</div>
+        <div class="fitSmall">${new Date(x.timestamp).toLocaleDateString()}</div>
+      </div>
+    `).join('');
+  }catch(e){
+    host.innerHTML = `<div class="fitSmall">후기를 불러오지 못했습니다.</div>`;
+  }
+}
+
+/* 주소검색 */
+function findAddr(){
+  new daum.Postcode({
+    oncomplete: function(d) {
+      $('#zip').value  = d.zonecode || '';
+      $('#road').value = d.roadAddress || d.address || '';
+      $('#addrDetail').focus();
+      updatePreview();
+    }
+  }).open();
+}
+
+/* 주문 흐름 */
+let cur = {style:'', color:'', size:'', price:{p:null,q:null,r:null}, pay:'계좌이체'};
+function openOrderDirect(el){
+  cur.style = el.getAttribute('data-style');
+  cur.color = el.getAttribute('data-color');
+  cur.size  = el.getAttribute('data-size');
+  try { cur.price = JSON.parse(el.getAttribute('data-price')||'{}'); } catch { cur.price={}; }
+  cur.pay = '계좌이체';
+  const {p,q,r} = cur.price||{};
+  const priceLine = [
+    q!=null?`정가 ${fmtWon(q)}`:'', 
+    p!=null?`판매가 ${fmtWon(p)}`:'', 
+    (r!=null && !isNaN(r))?`할인율 ${r}%`:''
+  ].filter(Boolean).join(' · ') || '가격 정보 없음';
+
+  $('#orderSel').textContent = `선택: ${cur.style} ${cur.color || ''} ${cur.size || ''}  |  ${priceLine}`;
+  $('#qty').value = 1;
+  $('#payMethod').value = cur.pay;
+  $('#depositor').value = '';
+  $('#recvName').value = '';
+  $('#recvPhone').value = '';
+  $('#zip').value = '';
+  $('#road').value = '';
+  $('#addrDetail').value = '';
+  $('#recvNote').value = '';
+  $('#height').value = '';
+  $('#weight').value = '';
+  $('#shareFit').checked = false;
+  showDepositor(true);
+  renderTotals();
+  updatePreview();
   $('#orderBack').style.display='flex';
 }
 function closeOrder(){ $('#orderBack').style.display='none'; }
-function closePending(){ $('#pendingBack').style.display='none'; }
 
-async function sendOrder(){
-  const msg=$('#orderPreview').textContent+'\n\n솔리드옴므 아울렛 주문요청';
-  try{await navigator.clipboard.writeText(msg);}catch{}
-  if($('#shareFit').checked){
-    const params=new URLSearchParams({
-      style:cur.style,color:cur.color,size:cur.size,
-      height_cm:$('#height').value,weight_kg:$('#weight').value
-    });
-    fetch(FIT_API,{method:'POST',
-      headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
-      body:params.toString()});
-  }
-  window.open(KAKAO_CHAT,'_blank');
-  alert('주문 내용이 클립보드에 복사되었습니다.\n카카오 채널에 붙여넣기 해주세요.');
-  closeOrder();
-  $('#pendingBack').style.display='flex';
+/* 주문 확인중 모달 닫기 */
+function closePending(){
+  const back = document.getElementById('pendingBack');
+  if (back) back.style.display = 'none';
 }
 
-load();
+function choosePay(kind){
+  cur.pay = kind;
+  $('#payMethod').value = kind;
+  showDepositor(kind==='계좌이체');
+  renderTotals();
+  updatePreview();
+}
+function showDepositor(show){
+  $('#depositorBox').style.display = show ? 'block' : 'none';
+}
+
+['qty','depositor','recvName','recvPhone','addrDetail','recvNote','height','weight'].forEach(id=>{
+  document.addEventListener('input', (e)=>{ if (e.target && e.target.id===id) { renderTotals(); updatePreview(); } });
+  document.addEventListener('change', (e)=>{ if (e.target && e.target.id===id) { renderTotals(); updatePreview(); } });
+});
+
+/* 합계/미리보기 */
+function renderTotals(){
+  const qty = Math.max(1, parseInt($('#qty').value||'1',10));
+  const method = $('#payMethod').value || '계좌이체';
+  const t = calcTotals(cur.price||{}, qty, method);
+  $('#unitPrice').textContent   = fmtWon(t.unit);
+  $('#qtyView').textContent     = String(qty);
+  $('#subtotalView').textContent= fmtWon(t.subtotal);
+  $('#shipView').textContent    = (method==='계좌이체' || t.subtotal>=FREE_SHIP_THRESHOLD) ? fmtWon(t.shipFee) : '추가 예정';
+  $('#totalLabel').textContent  = (method==='계좌이체' ? '결제금액(계좌이체)' : '결제금액(예상)');
+  $('#totalView').textContent   = (method==='계좌이체' ? fmtWon(t.total) : fmtWon(t.subtotal));
+  $('#shipHint').textContent    = t.hint;
+}
+function buildOrderText(){
+  const qty  = Math.max(1, parseInt($('#qty').value||'1',10));
+  const dep  = $('#depositor').value.trim();
+  const name = $('#recvName').value.trim();
+  const phone= $('#recvPhone').value.trim();
+  const zip  = $('#zip').value.trim();
+  const road = $('#road').value.trim();
+  const detail= $('#addrDetail').value.trim();
+  const addr = [zip?`(${zip})`:'', road, detail].filter(Boolean).join(' ');
+  const note = $('#recvNote').value.trim();
+  const height = $('#height').value.trim();
+  const weight = $('#weight').value.trim();
+  const {p,q,r} = cur.price||{};
+  const priceLine = [
+    q!=null?`정가 ${fmtWon(q)}`:'', 
+    p!=null?`판매가 ${fmtWon(p)}`:'', 
+    (r!=null && !isNaN(r))?`할인율 ${r}%`:''
+  ].filter(Boolean).join(' / ') || '가격 정보 없음';
+
+  const method = $('#payMethod').value || '계좌이체';
+  const totals = calcTotals(cur.price||{}, qty, method);
+
+  const shipText = (totals.subtotal>=FREE_SHIP_THRESHOLD)
+    ? '무료배송(40만원 이상)'
+    : (method==='계좌이체' ? `배송비 포함 ${fmtWon(totals.shipFee)}` : '배송비 3,000원 추가 예정(카드)');
+
+  const payLine = (method==='계좌이체')
+    ? `결제방식: 계좌이체 (입금자: ${dep || '(입력)'} / 총 입금액: ${fmtWon(totals.total)} / 계좌: 국민 616 701 01 634455 솔리드(한홍명))`
+    : `결제방식: 카드결제 (예상 결제금액: ${fmtWon(totals.subtotal)} / 배송비 별도 안내)`;
+
+  return (
+`[온라인 주문 요청]
+상품코드: ${cur.style}
+색상/사이즈: ${cur.color || '-'} / ${cur.size || '-'}
+수량: ${qty}
+가격: ${priceLine}
+체형: ${height?height+'cm':''} ${weight?weight+'kg':''}
+배송: ${shipText}
+
+${payLine}
+
+[수령자 정보]
+이름: ${name}
+연락처: ${phone}
+주소: ${addr}
+요청사항: ${note}
+
+• 택배비: 40만원 이상 무료 / 그 이하 3,000원
+• 교환: 수령 7일 내, 왕복 7,000원
+* 재고 확인 후 안내 드리겠습니다.` );
+}
+function updatePreview(){ $('#orderPreview').textContent = buildOrderText(); }
+
+/* 카카오 전송 + 후기 기록 */
+async function sendOrder(){
+  if (cur.pay==='계좌이체' && !$('#depositor').value.trim()){
+    alert('입금자 성명을 입력해 주세요.'); $('#depositor').focus(); return;
+  }
+  if (!$('#recvName').value.trim()){ alert('수령자 이름을 입력해 주세요.'); $('#recvName').focus(); return; }
+  if (!$('#recvPhone').value.trim()){ alert('연락처를 입력해 주세요.'); $('#recvPhone').focus(); return; }
+  if (!$('#road').value.trim()){ alert('주소 검색 버튼으로 도로명 주소를 입력해 주세요.'); return; }
+
+  const msg = buildOrderText();
+
+  // 1) 클립보드 복사 (실패해도 진행)
+  try{ await navigator.clipboard.writeText(msg); }catch{}
+
+  // 2) 후기 저장 (선택) — form-urlencoded로 전송 (Apps Script 호환)
+  if ($('#shareFit').checked && FIT_API && FIT_API.startsWith('http')){
+    const params = new URLSearchParams({
+      style: cur.style,
+      color: cur.color,
+      size:  cur.size,
+      height_cm: ($('#height').value||'').trim(),
+      weight_kg: ($('#weight').value||'').trim()
+    });
+    try{
+      await fetch(FIT_API, {
+        method: 'POST',
+        headers: {'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
+        body: params.toString()
+      });
+    }catch(e){}
+  }
+
+  // 3) 카카오 채널 열기 (붙여넣기 안내)
+  window.open(KAKAO_CHAT, '_blank');
+  alert('주문 내용이 클립보드로 복사되었습니다.\n카카오 채널 대화창이 열리면 붙여넣기 해주세요.');
+  closeOrder();
+  document.getElementById('pendingBack').style.display='flex';
+}
+
+/* 검색 */
+function search(){
+  const q = nz($('#q').value).toLowerCase();
+  const rows = INV.filter(r=>{
+    const code = nz(r['상품코드']).toLowerCase();
+    const name = nz(r['품명']).toLowerCase();
+    return q ? (code.includes(q) || name.includes(q)) : false;
+  });
+  render(rows);
+}
+$('#srchBtn').addEventListener('click', search);
+$('#q').addEventListener('keydown', (e)=>{ if (e.key==='Enter') search(); });
+
+/* 초기 로드 */
+load().catch(()=>{});
 </script>
 </body>
 </html>
