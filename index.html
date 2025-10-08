@@ -103,7 +103,7 @@
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modalHeader">
       <h3 style="margin:0;font-size:18px">주문서 작성</h3>
-      <button class="btn ghost" onclick="closeOrder()">닫기</button>
+      <button class="btn ghost" type="button" onclick="closeOrder()">닫기</button>
     </div>
 
     <div class="modalBody">
@@ -116,8 +116,8 @@
       </div>
 
       <div class="buttonRow" style="margin-bottom:6px">
-        <button class="btn big green" onclick="choosePay('계좌이체')">계좌이체로 주문</button>
-        <button class="btn big blue" onclick="choosePay('카드결제')">카드결제로 주문</button>
+        <button class="btn big green" type="button" onclick="choosePay('계좌이체')">계좌이체로 주문</button>
+        <button class="btn big blue"  type="button" onclick="choosePay('카드결제')">카드결제로 주문</button>
       </div>
 
       <div class="formGrid" style="margin:6px 0 6px 0">
@@ -191,7 +191,7 @@
     </div>
 
     <div class="modalFooter">
-      <button class="btn primary" onclick="sendOrder()">주문 보내기</button>
+      <button class="btn primary" type="button" onclick="sendOrder()">주문 보내기</button>
     </div>
   </div>
 </div>
@@ -201,7 +201,7 @@
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modalHeader">
       <h3 style="margin:0;font-size:18px">주문 확인중</h3>
-      <button class="btn ghost" onclick="closePending()">확인</button>
+      <button class="btn ghost" type="button" onclick="closePending()">확인</button>
     </div>
     <div class="modalBody">
       <div class="muted" style="white-space:pre-wrap">
@@ -220,12 +220,12 @@
 </div>
 
 <script>
-/* ===== 설정 (여기만 바꾸면 됨) ===== */
+/* ===== 설정 ===== */
 const INV_URL = `inventory.json?v=${Date.now()}`;
 const KAKAO_CHAT = 'https://pf.kakao.com/_EfjEj/chat';
 const FREE_SHIP_THRESHOLD = 400000;
 const SHIP_FEE = 3000;
-/* ★★★ 구글 앱스 스크립트 웹앱 URL 붙여넣기 ★★★ */
+/* ★★★ 구글 앱스 스크립트 웹앱 URL ★★★ */
 const FIT_API = 'https://script.google.com/macros/s/AKfycbyaBg64UzSgjlQv9S_78jE2tMuqzzgSoB7SycL9b7eY12vYlGVdR1VmqhjU2OY-Xvzt/exec';
 
 /* ===== 유틸 ===== */
@@ -238,7 +238,7 @@ function fmtWon(v){ return (v==null||v==='') ? '-' : Number(v).toLocaleString()+
 function decideState(store, wh, total){
   store=+store||0; wh=+wh||0; total=+total||0;
   if (store>=1 && wh>=1) return {label:'주문가능', cls:'ok', clickable:true};
-  if (store==0 && wh>=1) return {label:'품절임박', cls:'warn', clickable:true}; // 매장 없고 창고만: 클릭은 허용(상담)
+  if (store==0 && wh>=1) return {label:'품절임박', cls:'warn', clickable:true}; // 창고만: 상담 가능
   if (total<=9) return {label:'품절임박', cls:'warn', clickable:true};
   if (store>=1) return {label:'주문가능', cls:'ok', clickable:true};
   if (store==0 && wh==0) return {label:'주문불가', cls:'bad', clickable:false};
@@ -259,7 +259,7 @@ let INV=[];
 async function load(){
   const res = await fetch(INV_URL, {cache:'no-store'});
   INV = (await res.json()).map(normalizeRow);
-  // 알림
+  // 미니 알림
   const ok = document.createElement('div');
   ok.className='pill';
   ok.style.position='fixed'; ok.style.top='8px'; ok.style.left='8px';
@@ -354,7 +354,7 @@ function render(list){
       <div id="${colorSelId}_fit" class="fitBox">
         <div class="fitHead">
           <div><b>구매자 체형/착용사이즈 후기</b> <span class="fitSmall">(익명, 최근 10건)</span></div>
-          <button class="btn ghost" onclick="reloadFit('${item.code}','${firstColor}','${colorSelId}_fit')">새로고침</button>
+          <button class="btn ghost" type="button" onclick="reloadFit('${item.code}','${firstColor}','${colorSelId}_fit')">새로고침</button>
         </div>
         <div class="fitList" id="${colorSelId}_fitList"></div>
       </div>
@@ -367,7 +367,7 @@ function render(list){
         const c = e.target.value;
         updateSizes(colorSelId, item, c);
         document.getElementById(colorSelId+'_price').innerHTML = priceHTML(item.colors.get(c)||[]);
-        reloadFit(item.code, c, colorSelId+'_fit'); // 색 바뀌면 후기도 변경
+        reloadFit(item.code, c, colorSelId+'_fit');
       });
       reloadFit(item.code, firstColor, colorSelId+'_fit');
     }, 0);
@@ -402,7 +402,7 @@ async function reloadFit(style,color,containerId){
     const res = await fetch(url, {cache:'no-store'});
     const data = await res.json();
     const list = (data.list||[]).slice(-10).reverse(); // 최근 10건
-    const host = document.getElementById(containerId+'_List') || document.getElementById(containerId).querySelector('.fitList');
+    const host = document.getElementById(containerId+'_List') || document.getElementById(containerId+'_fitList') || document.querySelector(`#${CSS.escape(containerId)} .fitList`);
     if(!list.length){
       host.innerHTML = `<div class="fitSmall">아직 후기가 없습니다. 첫 번째 후기를 남겨주세요!</div>`;
       return;
@@ -415,7 +415,7 @@ async function reloadFit(style,color,containerId){
       </div>
     `).join('');
   }catch(e){
-    const host = document.getElementById(containerId).querySelector('.fitList');
+    const host = document.getElementById(containerId+'_fitList') || document.querySelector(`#${CSS.escape(containerId)} .fitList`);
     host.innerHTML = `<div class="fitSmall">후기를 불러오지 못했습니다.</div>`;
   }
 }
@@ -466,6 +466,12 @@ function openOrderDirect(el){
   $('#orderBack').style.display='flex';
 }
 function closeOrder(){ $('#orderBack').style.display='none'; }
+
+/* 주문 확인중 모달 닫기 */
+function closePending(){
+  const back = document.getElementById('pendingBack');
+  if (back) back.style.display = 'none';
+}
 
 function choosePay(kind){
   cur.pay = kind;
@@ -560,7 +566,7 @@ async function sendOrder(){
 
   const msg = buildOrderText();
 
-  // 1) 클립보드에 복사
+  // 1) 클립보드 복사
   try{ await navigator.clipboard.writeText(msg); }catch{}
 
   // 2) 후기 저장 (선택)
@@ -584,7 +590,7 @@ async function sendOrder(){
   window.open(KAKAO_CHAT, '_blank');
   alert('주문 내용이 클립보드로 복사되었습니다.\n카카오 채널 대화창이 열리면 붙여넣기(길게 누르기 → 붙여넣기) 해주세요.');
   closeOrder();
-  $('#pendingBack').style.display='flex';
+  document.getElementById('pendingBack').style.display='flex';
 }
 
 /* 검색 */
