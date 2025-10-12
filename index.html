@@ -34,7 +34,7 @@
   .sizeItem{display:flex;align-items:center;gap:10px}
   .sizeTag{min-width:44px;text-align:center;border:1px solid #2a3950;border-radius:10px;padding:6px 8px;background:#0e1726;color:#cfe8ff;font-size:13px}
   .grid{display:grid;grid-template-columns:1fr 210px 1fr;gap:10px;align-items:center}
-  .select{padding:9px 12px;border-radius:10px;border:1px solid #273547;background:#0e1622;color:var(--fg)}
+  .select{padding:9px 12px;border-radius:10px;border:1px solid #273547;background:#0e1622;color:#var(--fg)}
   .price{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .price .now{font-weight:800;font-size:17px}
   .price .orig{color:#a8b5c6;text-decoration:line-through}
@@ -114,7 +114,7 @@
         <div>• 오프라인 재고 연동이라 결제 후 품절 시 <b>전액 환불</b>됩니다.</div>
       </div>
 
-      <div class="buttonRow" style="margin-bottom:6px">
+      <div class="buttonRow" style="margin-bottom:6px)">
         <button class="btn big green" type="button" onclick="choosePay('계좌이체')">계좌이체로 주문</button>
         <button class="btn big blue"  type="button" onclick="choosePay('카드결제')">카드결제로 주문</button>
       </div>
@@ -233,38 +233,15 @@ const nz = v => (v==null ? '' : String(v).trim());
 function toInt(v, d=0){ try{ const s=String(v??'').replace(/[^\d-]/g,'').trim(); if(!s||s==='-')return d; return parseInt(s,10);}catch{return d;} }
 function fmtWon(v){ return (v==null||v==='') ? '-' : Number(v).toLocaleString()+'원'; }
 
-/* 숫자 안전 변환(문자 안의 숫자만 남겨서 정수화) */
-function num(v){
-  const s = String(v ?? '').replace(/[^\d-]/g,'').trim();
-  if (!s || s === '-') return 0;
-  const n = Number(s);
-  return Number.isFinite(n) ? n : 0;
-}
-
-/* 상태 규칙 — 먼저 ‘완전 품절’부터 강제 판정 */
+/* 상태 규칙 */
 function decideState(store, wh, total){
-  const s = num(store);
-  const w = num(wh);
-  let   t = num(total);
-  if (t <= 0) t = s + w; // total 비정상이면 보정
-
-  // 1) 완전 품절: 둘 다 0 이하면 무조건 주문불가
-  if (s <= 0 && w <= 0) {
-    return { label: '주문불가', cls: 'bad', clickable: false };
-  }
-
-  // 2) 정상 가용
-  if (s >= 1 && w >= 1) return { label: '주문가능', cls: 'ok',   clickable: true };
-  if (s >= 1 && w <= 0) return { label: '주문가능', cls: 'ok',   clickable: true };
-
-  // 3) 창고만 재고 (상담 가능)
-  if (s <= 0 && w >= 1) return { label: '품절임박', cls: 'warn', clickable: true };
-
-  // 4) 소량 경고 (총합이 아주 적을 때)
-  if (t > 0 && t <= 9)   return { label: '품절임박', cls: 'warn', clickable: true };
-
-  // 5) 나머지는 보수적으로 불가
-  return { label: '주문불가', cls: 'bad', clickable: false };
+  store=+store||0; wh=+wh||0; total=+total||0;
+  if (store>=1 && wh>=1) return {label:'주문가능', cls:'ok', clickable:true};
+  if (store==0 && wh>=1) return {label:'품절임박', cls:'warn', clickable:true}; // 창고만: 상담 가능
+  if (total<=9) return {label:'품절임박', cls:'warn', clickable:true};
+  if (store>=1) return {label:'주문가능', cls:'ok', clickable:true};
+  if (store==0 && wh==0) return {label:'주문불가', cls:'bad', clickable:false};
+  return {label:'주문가능', cls:'ok', clickable:true};
 }
 
 /* 데이터 정규화 */
@@ -274,7 +251,7 @@ function normalizeRow(r){
   if (out['창고재고']==null && out['물류합']!=null) out['창고재고']=out['물류합'];
   if (out['전체재고']==null && out['전체합']!=null) out['전체재고']=out['전체합'];
   if (out['소비자가']==null && out['할인전가격']!=null) out['소비자가']=out['할인전가격'];
-  if (out['할인율']==null && out['할인율(%)']!=null) out['갈인율']=out['할인율(%)']; // 오타 방지용
+  if (out['할인율']==null && out['할인율(%)']!=null) out['할인율']=out['할인율(%)'];
   return out;
 }
 let INV=[];
@@ -326,9 +303,11 @@ function calcTotals(price, qty, pay){
   const unit = (price.p!=null ? price.p : price.q);
   const unitSafe = (unit==null ? 0 : unit);
   const subtotal = unitSafe * qty;
+
   let shipFee = 0;
   let total = subtotal;
   let hint = '';
+
   if (subtotal >= FREE_SHIP_THRESHOLD){
     hint = '40만원 이상 구매로 무료배송입니다.';
   }else{
