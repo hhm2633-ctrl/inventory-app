@@ -34,7 +34,7 @@
   .sizeItem{display:flex;align-items:center;gap:10px}
   .sizeTag{min-width:44px;text-align:center;border:1px solid #2a3950;border-radius:10px;padding:6px 8px;background:#0e1726;color:#cfe8ff;font-size:13px}
   .grid{display:grid;grid-template-columns:1fr 210px 1fr;gap:10px;align-items:center}
-  .select{padding:9px 12px;border-radius:10px;border:1px solid #273547;background:#0e1622;color:#var(--fg)}
+  .select{padding:9px 12px;border-radius:10px;border:1px solid #273547;background:#0e1622;color:var(--fg)}
   .price{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .price .now{font-weight:800;font-size:17px}
   .price .orig{color:#a8b5c6;text-decoration:line-through}
@@ -114,7 +114,7 @@
         <div>• 오프라인 재고 연동이라 결제 후 품절 시 <b>전액 환불</b>됩니다.</div>
       </div>
 
-      <div class="buttonRow" style="margin-bottom:6px)">
+      <div class="buttonRow" style="margin-bottom:6px">
         <button class="btn big green" type="button" onclick="choosePay('계좌이체')">계좌이체로 주문</button>
         <button class="btn big blue"  type="button" onclick="choosePay('카드결제')">카드결제로 주문</button>
       </div>
@@ -233,14 +233,16 @@ const nz = v => (v==null ? '' : String(v).trim());
 function toInt(v, d=0){ try{ const s=String(v??'').replace(/[^\d-]/g,'').trim(); if(!s||s==='-')return d; return parseInt(s,10);}catch{return d;} }
 function fmtWon(v){ return (v==null||v==='') ? '-' : Number(v).toLocaleString()+'원'; }
 
-/* 상태 규칙 */
+/* 상태 규칙 (원상 복구: 총재고 0=주문불가, 1~8=품절임박, 그 외 주문가능, 창고만은 품절임박) */
 function decideState(store, wh, total){
-  store=+store||0; wh=+wh||0; total=+total||0;
-  if (store>=1 && wh>=1) return {label:'주문가능', cls:'ok', clickable:true};
-  if (store==0 && wh>=1) return {label:'품절임박', cls:'warn', clickable:true}; // 창고만: 상담 가능
-  if (total<=9) return {label:'품절임박', cls:'warn', clickable:true};
-  if (store>=1) return {label:'주문가능', cls:'ok', clickable:true};
-  if (store==0 && wh==0) return {label:'주문불가', cls:'bad', clickable:false};
+  const s = toInt(store, 0);
+  const w = toInt(wh, 0);
+  // total이 안 들어오면 s+w로 보정
+  const t = toInt(total, s + w);
+
+  if (t <= 0) return {label:'주문불가', cls:'bad',  clickable:false};
+  if (t < 9)  return {label:'품절임박', cls:'warn', clickable:true};
+  if (s === 0 && w > 0) return {label:'품절임박', cls:'warn', clickable:true};
   return {label:'주문가능', cls:'ok', clickable:true};
 }
 
