@@ -233,29 +233,37 @@ const nz = v => (v==null ? '' : String(v).trim());
 function toInt(v, d=0){ try{ const s=String(v??'').replace(/[^\d-]/g,'').trim(); if(!s||s==='-')return d; return parseInt(s,10);}catch{return d;} }
 function fmtWon(v){ return (v==null||v==='') ? '-' : Number(v).toLocaleString()+'원'; }
 
-/* 상태 규칙 — 총재고 0이면 무조건 '주문불가' */
-function decideState(store, wh, total){
-  const s = Number(store) || 0;
-  const w = Number(wh)    || 0;
-  let   t = Number(total);
-  if (!Number.isFinite(t) || t < 0) t = s + w; // total 비정상 시 보정
+/* 숫자 안전 변환(문자 안의 숫자만 남겨서 정수화) */
+function num(v){
+  const s = String(v ?? '').replace(/[^\d-]/g,'').trim();
+  if (!s || s === '-') return 0;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : 0;
+}
 
-  // 1) 완전 품절
-  if (s === 0 && w === 0 && t === 0) {
+/* 상태 규칙 — 먼저 ‘완전 품절’부터 강제 판정 */
+function decideState(store, wh, total){
+  const s = num(store);
+  const w = num(wh);
+  let   t = num(total);
+  if (t <= 0) t = s + w; // total 비정상이면 보정
+
+  // 1) 완전 품절: 둘 다 0 이하면 무조건 주문불가
+  if (s <= 0 && w <= 0) {
     return { label: '주문불가', cls: 'bad', clickable: false };
   }
 
   // 2) 정상 가용
   if (s >= 1 && w >= 1) return { label: '주문가능', cls: 'ok',   clickable: true };
-  if (s >= 1 && w === 0) return { label: '주문가능', cls: 'ok',   clickable: true };
+  if (s >= 1 && w <= 0) return { label: '주문가능', cls: 'ok',   clickable: true };
 
   // 3) 창고만 재고 (상담 가능)
-  if (s === 0 && w >= 1) return { label: '품절임박', cls: 'warn', clickable: true };
+  if (s <= 0 && w >= 1) return { label: '품절임박', cls: 'warn', clickable: true };
 
-  // 4) 소량 경고
+  // 4) 소량 경고 (총합이 아주 적을 때)
   if (t > 0 && t <= 9)   return { label: '품절임박', cls: 'warn', clickable: true };
 
-  // 5) 그 외 방어
+  // 5) 나머지는 보수적으로 불가
   return { label: '주문불가', cls: 'bad', clickable: false };
 }
 
@@ -266,7 +274,7 @@ function normalizeRow(r){
   if (out['창고재고']==null && out['물류합']!=null) out['창고재고']=out['물류합'];
   if (out['전체재고']==null && out['전체합']!=null) out['전체재고']=out['전체합'];
   if (out['소비자가']==null && out['할인전가격']!=null) out['소비자가']=out['할인전가격'];
-  if (out['할인율']==null && out['할인율(%)']!=null) out['할인율']=out['할인율(%)'];
+  if (out['할인율']==null && out['할인율(%)']!=null) out['갈인율']=out['할인율(%)']; // 오타 방지용
   return out;
 }
 let INV=[];
@@ -617,4 +625,3 @@ load().catch(()=>{});
 </script>
 </body>
 </html>
-
