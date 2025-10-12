@@ -233,34 +233,30 @@ const nz = v => (v==null ? '' : String(v).trim());
 function toInt(v, d=0){ try{ const s=String(v??'').replace(/[^\d-]/g,'').trim(); if(!s||s==='-')return d; return parseInt(s,10);}catch{return d;} }
 function fmtWon(v){ return (v==null||v==='') ? '-' : Number(v).toLocaleString()+'원'; }
 
-/* ===== 사이즈 규칙(추가) ===== */
-const TOK = {
-  RTW: ["ts","tsa","sh","sha","ds","jp","jpa","dn","dna","hc","sj","cj","kn","kna","lj","lja"],
-  PANTS: ["pt","pta","sp"],
-  SHOES: ["su"]
-};
-const SIZE_ORDER = {
-  RTW:  ["44","46","48","50","52"],
-  PANTS:["30","31","32","33","34","36"],
-  SHOES:["39","40","41","42","43"]
-};
-function getSizeOrderFor(styleCode=""){
-  const code = String(styleCode||"").toLowerCase();
-  for (const [cat, keys] of Object.entries(TOK)) {
-    if (keys.some(k=>code.includes(k))) return SIZE_ORDER[cat];
-  }
-  return null; // 모르면 데이터에 나온 사이즈만 사용
-}
-
-/* 상태 규칙 */
+/* 상태 규칙 — 총재고 0이면 무조건 '주문불가' */
 function decideState(store, wh, total){
-  store=+store||0; wh=+wh||0; total=+total||0;
-  if (store>=1 && wh>=1) return {label:'주문가능', cls:'ok', clickable:true};
-  if (store==0 && wh>=1) return {label:'품절임박', cls:'warn', clickable:true}; // 창고만: 상담 가능
-  if (total<=9) return {label:'품절임박', cls:'warn', clickable:true};
-  if (store>=1) return {label:'주문가능', cls:'ok', clickable:true};
-  if (store==0 && wh==0) return {label:'주문불가', cls:'bad', clickable:false};
-  return {label:'주문가능', cls:'ok', clickable:true};
+  const s = Number(store) || 0;
+  const w = Number(wh)    || 0;
+  let   t = Number(total);
+  if (!Number.isFinite(t) || t < 0) t = s + w; // total 비정상 시 보정
+
+  // 1) 완전 품절
+  if (s === 0 && w === 0 && t === 0) {
+    return { label: '주문불가', cls: 'bad', clickable: false };
+  }
+
+  // 2) 정상 가용
+  if (s >= 1 && w >= 1) return { label: '주문가능', cls: 'ok',   clickable: true };
+  if (s >= 1 && w === 0) return { label: '주문가능', cls: 'ok',   clickable: true };
+
+  // 3) 창고만 재고 (상담 가능)
+  if (s === 0 && w >= 1) return { label: '품절임박', cls: 'warn', clickable: true };
+
+  // 4) 소량 경고
+  if (t > 0 && t <= 9)   return { label: '품절임박', cls: 'warn', clickable: true };
+
+  // 5) 그 외 방어
+  return { label: '주문불가', cls: 'bad', clickable: false };
 }
 
 /* 데이터 정규화 */
@@ -279,37 +275,25 @@ async function load(){
   INV = (await res.json()).map(normalizeRow);
 }
 
-/* 그룹화/정렬 (교체) */
+/* 그룹화/정렬 */
 function groupByStyle(rows){
   const map = new Map();
   for (const r of rows){
-    const code  = nz(r['상품코드']).toUpperCase();
+    const code = nz(r['상품코드']).toUpperCase();
     const color = nz(r['색상']);
+    const size  = nz(r['사이즈']);
     if (!map.has(code)) map.set(code, {code, colors:new Map()});
     const entry = map.get(code);
     if (!entry.colors.has(color)) entry.colors.set(color, []);
     entry.colors.get(color).push(r);
   }
-
-  // 코드별 사이즈 순서에 따라 정렬
-  for (const [,v] of map){
-    const order = getSizeOrderFor(v.code);
-    const idx = (s)=>{
-      if (order) {
-        const i = order.indexOf(String(s));
-        return i === -1 ? 999 : i;
-      }
-      const n = Number(s);
-      return Number.isNaN(n) ? 999 : n;
-    };
-    for (const [c,arr] of v.colors){
-      arr.sort((a,b)=> idx(nz(a['사이즈'])) - idx(nz(b['사이즈'])));
-      v.colors.set(c, arr);
-    }
-  }
+  const orderRTW=['44','46','48','50','52','54'];
+  const orderP=['28','30','31','32','33','34','36'];
+  const orderS=['39','40','41','42','43'];
+  const idx=(s)=> orderRTW.includes(s)?orderRTW.indexOf(s):orderP.includes(s)?100+orderP.indexOf(s):orderS.includes(s)?200+orderS.indexOf(s):999;
+  for (const [,v] of map){ for (const [c,arr] of v.colors){ arr.sort((a,b)=>idx(nz(a['사이즈']))-idx(nz(b['사이즈']))); v.colors.set(c,arr);} }
   return map;
 }
-
 function computePrice(rows){
   const r0 = rows.find(r=> r['판매가']!=null || r['소비자가']!=null || r['할인율']!=null) || {};
   let p = toInt(r0['판매가'], null);
@@ -334,11 +318,9 @@ function calcTotals(price, qty, pay){
   const unit = (price.p!=null ? price.p : price.q);
   const unitSafe = (unit==null ? 0 : unit);
   const subtotal = unitSafe * qty;
-
   let shipFee = 0;
   let total = subtotal;
   let hint = '';
-
   if (subtotal >= FREE_SHIP_THRESHOLD){
     hint = '40만원 이상 구매로 무료배송입니다.';
   }else{
@@ -398,37 +380,24 @@ function render(list){
   $('#result').innerHTML = blocks.join('');
 }
 
-/* 사이즈 렌더 (교체: 품절도 모두 노출) */
 function updateSizes(id, item, color){
   const box = document.getElementById(id+'_sizes');
   const rows = item.colors.get(color)||[];
-
-  // 코드에서 사이즈 전체 목록 가져오기 (없으면 현재 데이터의 사이즈만 사용)
-  const order = getSizeOrderFor(item.code);
-  const allSizes = order && order.length ? order : Array.from(new Set(rows.map(r=>nz(r['사이즈']))));
-
-  // 빠른 조회를 위한 맵
-  const bySize = new Map();
-  for (const r of rows) bySize.set(nz(r['사이즈']), r);
-
-  // 사이즈 전체를 돌며, 데이터가 없으면 0재고 더미로 렌더
-  const html = allSizes.map(size => {
-    const r = bySize.get(size) || {
-      '상품코드': item.code, '색상': color, '사이즈': size,
-      '매장재고': 0, '창고재고': 0, '전체재고': 0
-    };
-    const st = decideState(r['매장재고'], r['창고재고'], r['전체재고']); // 0이면 '주문불가'(red)
+  if (!rows.length){
+    box.innerHTML = `<div class="sizeItem"><span class="sizeTag">-</span><span class="state bad">주문불가</span></div>`;
+    return;
+  }
+  const html = rows.map(r=>{
+    const size = nz(r['사이즈'])||'-';
+    const st = decideState(r['매장재고'], r['창고재고'], r['전체재고']);
     const attrs = `data-style="${item.code}" data-color="${color}" data-size="${size}" data-price='${JSON.stringify(computePrice(rows))}'`;
     const clickable = st.clickable ? `onclick="openOrderDirect(this)" role="button" tabindex="0"` : 'aria-disabled="true"';
-
     return `<div class="sizeItem">
               <span class="sizeTag">${size}</span>
               <span class="state ${st.cls}" ${attrs} ${clickable}>${st.label}</span>
             </div>`;
   }).join('');
-
-  // 사이즈 정의가 전혀 없고 데이터도 비었을 때의 최후 fallback
-  box.innerHTML = html || `<div class="sizeItem"><span class="sizeTag">-</span><span class="state bad">주문불가</span></div>`;
+  box.innerHTML = html;
 }
 
 /* 후기 불러오기/그리기 */
@@ -602,8 +571,10 @@ async function sendOrder(){
 
   const msg = buildOrderText();
 
+  // 1) 클립보드 복사 (실패해도 진행)
   try{ await navigator.clipboard.writeText(msg); }catch{}
 
+  // 2) 후기 저장 (선택) — form-urlencoded로 전송 (Apps Script 호환)
   if ($('#shareFit').checked && FIT_API && FIT_API.startsWith('http')){
     const params = new URLSearchParams({
       style: cur.style,
@@ -621,6 +592,7 @@ async function sendOrder(){
     }catch(e){}
   }
 
+  // 3) 카카오 채널 열기 (붙여넣기 안내)
   window.open(KAKAO_CHAT, '_blank');
   alert('주문 내용이 클립보드로 복사되었습니다.\n카카오 채널 대화창이 열리면 붙여넣기 해주세요.');
   closeOrder();
@@ -645,3 +617,4 @@ load().catch(()=>{});
 </script>
 </body>
 </html>
+
