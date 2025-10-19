@@ -20,7 +20,13 @@
   .btn.green{background:#0f2b1b;border-color:#1f5c37}
   .btn.blue{background:#0f1a3a;border-color:#3d4aac}
   .btn.ghost{background:transparent;border-color:#2b3a52}
-  .search{width:100%;padding:12px 14px;border-radius:14px;border:1px solid #273547;background:#0f1620;color:#var(--fg);font-size:16px;}
+  .search{
+    width:100%;padding:12px 14px;border-radius:14px;border:1px solid #273547;
+    background:#0f1620;color:var(--fg); /* ← 오타 수정 (# 제거) */
+    caret-color:var(--fg);
+    font-size:16px;
+  }
+  .search::placeholder{color:#9aa7b8}
   .card{background:linear-gradient(180deg,#121820,#0d1420);border:1px solid #1c2430;border-radius:16px;padding:16px;}
   .pill{border:1px solid #2a3950;background:#0f172a;color:#cfe8ff;border-radius:999px;padding:5px 9px;font-size:12px}
   .state{display:inline-block;border-radius:16px;padding:6px 12px;font-size:13px;border:1px solid transparent;
@@ -233,21 +239,8 @@ const nz = v => (v==null ? '' : String(v).trim());
 function toInt(v, d=0){ try{ const s=String(v??'').replace(/[^\d-]/g,'').trim(); if(!s||s==='-')return d; return parseInt(s,10);}catch{return d;} }
 function fmtWon(v){ return (v==null||v==='') ? '-' : Number(v).toLocaleString()+'원'; }
 
-/* 상태 규칙: 상태 텍스트 우선 → 숫자 규칙 */
-function decideState(store, wh, total, status=''){
-  // 상태 텍스트 우선 처리 (공백 제거·소문자)
-  const stxt = (status==null ? '' : String(status)).toLowerCase().replace(/\s+/g,'');
-
-  // 확실한 불가: 미입고/완판/품절(임박 제외)
-  if (/미입고|완판|^품절$|^전면품절$/.test(stxt)) {
-    return {label:'주문불가', cls:'bad', clickable:false};
-  }
-  // 입고 예정/예약/프리오더
-  if (/입고예정|예약|pre[-]?order|preorder/.test(stxt)) {
-    return {label:'입고예정', cls:'incoming', clickable:false};
-  }
-
-  // 숫자 규칙 (원래 계획)
+/* 상태 규칙 (원상 복구: 총재고 0=주문불가, 1~8=품절임박, 그 외 주문가능, 창고만은 품절임박) */
+function decideState(store, wh, total){
   const s = toInt(store, 0);
   const w = toInt(wh, 0);
   const t = toInt(total, s + w); // total 없으면 s+w로 보정
@@ -390,10 +383,7 @@ function updateSizes(id, item, color){
   }
   const html = rows.map(r=>{
     const size = nz(r['사이즈'])||'-';
-    // 상태 텍스트를 여러 필드에서 수집
-    const statusText =
-      r['상태'] ?? r['재고상태'] ?? r['입고상태'] ?? r['상태메모'] ?? r['비고'] ?? r['메모'] ?? '';
-    const st = decideState(r['매장재고'], r['창고재고'], r['전체재고'], statusText);
+    const st = decideState(r['매장재고'], r['창고재고'], r['전체재고']);
     const attrs = `data-style="${item.code}" data-color="${color}" data-size="${size}" data-price='${JSON.stringify(computePrice(rows))}'`;
     const clickable = st.clickable ? `onclick="openOrderDirect(this)" role="button" tabindex="0"` : 'aria-disabled="true"';
     return `<div class="sizeItem">
