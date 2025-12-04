@@ -33,8 +33,14 @@
   .sizeCol{display:flex;flex-direction:column;gap:8px}
   .sizeItem{display:flex;align-items:center;gap:10px}
   .sizeTag{min-width:44px;text-align:center;border:1px solid #2a3950;border-radius:10px;padding:6px 8px;background:#0e1726;color:#cfe8ff;font-size:13px}
-  .grid{display:grid;grid-template-columns:1fr 210px 1fr;gap:10px;align-items:center}
-  .select{padding:9px 12px;border-radius:10px;border:1px solid #273547;background:#0e1622;color:var(--fg)}
+  
+  /* ★ 수정된 디자인: 사진과 정보를 나누는 레이아웃 ★ */
+  .info-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+  .info-left { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .info-right { width: 90px; flex-shrink: 0; }
+  .thumb-img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 8px; border: 1px solid #2a3950; background: #0e1622; display: block; }
+  
+  .select{width:100%; padding:9px 12px;border-radius:10px;border:1px solid #273547;background:#0e1622;color:var(--fg)}
   .price{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .price .now{font-weight:800;font-size:17px}
   .price .orig{color:#a8b5c6;text-decoration:line-through}
@@ -135,10 +141,9 @@
         <input id="depositor" class="txt" placeholder="예: 홍길동" />
       </div>
 
-      <!-- 체형/착용 정보 수집 -->
       <div class="formGrid" style="margin-top:8px">
         <div>
-          <div class="label">키 (cm) — 공개 동의시 다른 고객에게 도움됩니다</div>
+          <div class="label">키 (cm)</div>
           <input id="height" class="txt" placeholder="예: 178" inputmode="numeric" />
         </div>
         <div>
@@ -151,7 +156,6 @@
         주문한 <b>스타일/컬러/사이즈 + 키/몸무게</b>를 익명으로 공개하여 다음 고객에게 도움 주기 (선택)
       </label>
 
-      <!-- 금액 요약 -->
       <div id="totalBox" class="totalBox" style="margin-top:8px">
         <div class="line"><span>단가</span><span id="unitPrice">-</span></div>
         <div class="line"><span>수량</span><span id="qtyView">1</span></div>
@@ -218,7 +222,7 @@
   </div>
 </div>
 
-<!-- 안내 팝업 모달 (카카오 열기 전) -->
+<!-- 안내 팝업 모달 -->
 <div id="preKakaoBack" class="modalBack" onclick="closePreKakao(event)" style="display:none">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modalHeader">
@@ -236,11 +240,11 @@
 
 <script>
 /* ===== 설정 ===== */
+/* 사장님이 적용한 새 주소 적용됨 */
 const INV_URL = `https://script.google.com/macros/s/AKfycbx_SwTIl5G63aXW6IlyI9GKOzyglWdbded1eFXZ1-gndmDv2wrVzMplleLmzRAhgHaj/exec`;
 const KAKAO_CHAT = 'https://pf.kakao.com/_EfjEj/chat';
 const FREE_SHIP_THRESHOLD = 400000;
 const SHIP_FEE = 3000;
-/* ★★★ 구글 앱스 스크립트 웹앱 URL ★★★ */
 const FIT_API = 'https://script.google.com/macros/s/AKfycbyaBg64UzSgjlQv9S_78jE2tMuqzzgSoB7SycL9b7eY12vYlGVdR1VmqhjU2OY-Xvzt/exec';
 
 /* ===== 유틸 ===== */
@@ -268,12 +272,21 @@ function normalizeRow(r){
   if (out['전체재고']==null && out['전체합']!=null) out['전체재고']=out['전체합'];
   if (out['소비자가']==null && out['할인전가격']!=null) out['소비자가']=out['할인전가격'];
   if (out['할인율']==null && out['할인율(%)']!=null) out['할인율']=out['할인율(%)'];
+  
+  // ★ 이미지 주소 처리 추가됨
+  if (out['이미지']==null) out['이미지'] = ''; 
+
   return out;
 }
 let INV=[];
 async function load(){
-  const res = await fetch(INV_URL, {cache:'no-store'});
-  INV = (await res.json()).map(normalizeRow);
+  try {
+    const res = await fetch(INV_URL, {cache:'no-store'});
+    const json = await res.json();
+    INV = json.map(normalizeRow);
+  } catch(e) {
+    console.error("데이터 로드 실패:", e);
+  }
 }
 
 /* 그룹화/정렬 */
@@ -338,27 +351,43 @@ function calcTotals(price, qty, pay){
   return { unit, subtotal, shipFee, total, hint };
 }
 
-/* 렌더 */
+/* ★★★ 렌더 (사진 표시 기능 추가됨) ★★★ */
 function render(list){
   if (!list.length){ $('#result').innerHTML = `<div style="color:#9aa7b8">검색 결과가 없습니다.</div>`; return; }
   const g = groupByStyle(list);
   const blocks=[];
+  
   for (const [, item] of g){
     const colors = Array.from(item.colors.keys());
     const colorSelId = 'color_'+Math.random().toString(36).slice(2,8);
+    const imgId = colorSelId + '_img'; 
+
     const firstColor = colors[0] || '(색상없음)';
     const firstRows  = item.colors.get(firstColor) || [];
+
+    // 노션 이미지 가져오기
+    const firstImg = firstRows[0] && firstRows[0]['이미지'] ? firstRows[0]['이미지'] : ''; 
+    const displayImg = firstImg || 'https://via.placeholder.com/90x120/0e1622/333?text=No+Img';
+
+    // HTML 구조: 왼쪽(정보) / 오른쪽(사진)
     const head = `
-      <div class="grid" style="margin:6px 0 8px 0">
-        <div><div class="pill" style="font-weight:700;font-size:16px">${item.code}</div></div>
-        <div>
-          <select id="${colorSelId}" class="select">
-            ${colors.map(c=>`<option value="${c}">${c || '(색상없음)'}</option>`).join('')}
-          </select>
+      <div class="info-row">
+        <div class="info-left">
+           <div class="pill" style="width:fit-content;font-weight:700;font-size:16px">${item.code}</div>
+           <select id="${colorSelId}" class="select">
+             ${colors.map(c=>`<option value="${c}">${c || '(색상없음)'}</option>`).join('')}
+           </select>
+           <div id="${colorSelId}_price">${priceHTML(firstRows)}</div>
         </div>
-        <div id="${colorSelId}_price">${priceHTML(firstRows)}</div>
+        <div class="info-right">
+           <a href="${displayImg}" target="_blank" id="${imgId}_link">
+             <img id="${imgId}" src="${displayImg}" class="thumb-img" onerror="this.src='https://via.placeholder.com/90x120/0e1622/333?text=Err'"/>
+           </a>
+        </div>
       </div>
+
       <div id="${colorSelId}_sizes" class="sizeCol"></div>
+      
       <div id="${colorSelId}_fit" class="fitBox">
         <div class="fitHead">
           <div><b>구매자 체형/착용사이즈 후기</b> <span class="fitSmall">(익명, 최근 10건)</span></div>
@@ -368,14 +397,24 @@ function render(list){
       </div>
     `;
     blocks.push(`<div style="border-top:1px solid #1c2430;padding-top:10px;margin-top:10px">${head}</div>`);
+    
     setTimeout(()=> {
       updateSizes(colorSelId, item, firstColor);
       const sel = document.getElementById(colorSelId);
       sel?.addEventListener('change', (e)=>{
         const c = e.target.value;
+        const currentRows = item.colors.get(c)||[];
+        
         updateSizes(colorSelId, item, c);
-        document.getElementById(colorSelId+'_price').innerHTML = priceHTML(item.colors.get(c)||[]);
+        document.getElementById(colorSelId+'_price').innerHTML = priceHTML(currentRows);
         reloadFit(item.code, c, colorSelId);
+
+        // 사진 업데이트 로직
+        const newImgUrl = (currentRows[0] && currentRows[0]['이미지']) ? currentRows[0]['이미지'] : 'https://via.placeholder.com/90x120/0e1622/333?text=No+Img';
+        const imgTag = document.getElementById(imgId);
+        const linkTag = document.getElementById(imgId + '_link');
+        if(imgTag) imgTag.src = newImgUrl;
+        if(linkTag) linkTag.href = newImgUrl;
       });
       reloadFit(item.code, firstColor, colorSelId);
     }, 0);
