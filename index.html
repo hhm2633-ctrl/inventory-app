@@ -34,7 +34,7 @@
   .sizeItem{display:flex;align-items:center;gap:10px}
   .sizeTag{min-width:44px;text-align:center;border:1px solid #2a3950;border-radius:10px;padding:6px 8px;background:#0e1726;color:#cfe8ff;font-size:13px}
   
-  /* ★ 수정된 디자인: 사진과 정보를 나누는 레이아웃 ★ */
+  /* 디자인: 사진과 정보를 나누는 레이아웃 */
   .info-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
   .info-left { flex: 1; display: flex; flex-direction: column; gap: 8px; }
   .info-right { width: 90px; flex-shrink: 0; }
@@ -240,7 +240,6 @@
 
 <script>
 /* ===== 설정 ===== */
-/* 사장님이 적용한 새 주소 적용됨 */
 const INV_URL = `https://script.google.com/macros/s/AKfycbx_SwTIl5G63aXW6IlyI9GKOzyglWdbded1eFXZ1-gndmDv2wrVzMplleLmzRAhgHaj/exec`;
 const KAKAO_CHAT = 'https://pf.kakao.com/_EfjEj/chat';
 const FREE_SHIP_THRESHOLD = 400000;
@@ -273,7 +272,6 @@ function normalizeRow(r){
   if (out['소비자가']==null && out['할인전가격']!=null) out['소비자가']=out['할인전가격'];
   if (out['할인율']==null && out['할인율(%)']!=null) out['할인율']=out['할인율(%)'];
   
-  // ★ 이미지 주소 처리 추가됨
   if (out['이미지']==null) out['이미지'] = ''; 
 
   return out;
@@ -351,9 +349,9 @@ function calcTotals(price, qty, pay){
   return { unit, subtotal, shipFee, total, hint };
 }
 
-/* ★★★ 렌더 (사진 표시 기능 추가됨) ★★★ */
+/* ★★★ 렌더 (사진 표시 기능 + 오류 수정됨) ★★★ */
 function render(list){
-  if (!list.length){ $('#result').innerHTML = `<div style="color:#9aa7b8">검색 결과가 없습니다.</div>`; return; }
+  if (!list.length){ $('#result').innerHTML = `<div style="color:#9aa7b8; text-align:center; padding:20px;">검색 결과가 없습니다.</div>`; return; }
   const g = groupByStyle(list);
   const blocks=[];
   
@@ -365,23 +363,33 @@ function render(list){
     const firstColor = colors[0] || '(색상없음)';
     const firstRows  = item.colors.get(firstColor) || [];
 
-    // 노션 이미지 가져오기
-    const firstImg = firstRows[0] && firstRows[0]['이미지'] ? firstRows[0]['이미지'] : ''; 
-    const displayImg = firstImg || 'https://via.placeholder.com/90x120/0e1622/333?text=No+Img';
+    // 1. 노션 이미지 주소 가져오기
+    const realImg = firstRows[0] && firstRows[0]['이미지'] ? firstRows[0]['이미지'] : ''; 
+    
+    // 2. 이미지가 없으면 보여줄 '대체 이미지' (더 안정적인 사이트로 교체함)
+    const placeholder = 'https://placehold.co/90x120/1e2a3a/666?text=Solid';
+    
+    // 3. 실제 화면에 보여줄 것 결정
+    const displayImg = realImg || placeholder;
+    
+    // 4. 클릭 링크 결정 (진짜 이미지가 있을 때만 새창 열기, 없으면 링크 없음)
+    const linkHref = realImg ? realImg : 'javascript:void(0)';
+    const cursorStyle = realImg ? 'cursor:pointer' : 'cursor:default';
 
     // HTML 구조: 왼쪽(정보) / 오른쪽(사진)
     const head = `
       <div class="info-row">
         <div class="info-left">
            <div class="pill" style="width:fit-content;font-weight:700;font-size:16px">${item.code}</div>
-           <select id="${colorSelId}" class="select">
+           <select id="${colorSelId}" class="select" style="width:100%">
              ${colors.map(c=>`<option value="${c}">${c || '(색상없음)'}</option>`).join('')}
            </select>
            <div id="${colorSelId}_price">${priceHTML(firstRows)}</div>
         </div>
         <div class="info-right">
-           <a href="${displayImg}" target="_blank" id="${imgId}_link">
-             <img id="${imgId}" src="${displayImg}" class="thumb-img" onerror="this.src='https://via.placeholder.com/90x120/0e1622/333?text=Err'"/>
+           <!-- ★ 사진이 있을 때만 클릭됨 -->
+           <a href="${linkHref}" target="_blank" id="${imgId}_link" style="${cursorStyle}">
+             <img id="${imgId}" src="${displayImg}" class="thumb-img" onerror="this.src='${placeholder}'"/>
            </a>
         </div>
       </div>
@@ -410,11 +418,21 @@ function render(list){
         reloadFit(item.code, c, colorSelId);
 
         // 사진 업데이트 로직
-        const newImgUrl = (currentRows[0] && currentRows[0]['이미지']) ? currentRows[0]['이미지'] : 'https://via.placeholder.com/90x120/0e1622/333?text=No+Img';
+        const newRealImg = (currentRows[0] && currentRows[0]['이미지']) ? currentRows[0]['이미지'] : '';
+        const newDisplay = newRealImg || placeholder;
+        
         const imgTag = document.getElementById(imgId);
         const linkTag = document.getElementById(imgId + '_link');
-        if(imgTag) imgTag.src = newImgUrl;
-        if(linkTag) linkTag.href = newImgUrl;
+        
+        if(imgTag) {
+          imgTag.src = newDisplay;
+          // 에러 발생 시(이미지 만료 등) 플레이스홀더로 복귀
+          imgTag.onerror = function() { this.src = placeholder; };
+        }
+        if(linkTag) {
+          linkTag.href = newRealImg ? newRealImg : 'javascript:void(0)';
+          linkTag.style.cursor = newRealImg ? 'pointer' : 'default';
+        }
       });
       reloadFit(item.code, firstColor, colorSelId);
     }, 0);
